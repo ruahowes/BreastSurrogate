@@ -5,7 +5,7 @@ using VMS.TPS.Common.Model.Types;
 namespace BreastSurrogate.Core.Calculation
 {
     /// <summary>
-    /// Classifies patient-space structure points against two jaw-only apertures.
+    /// Classifies patient-space structure points against two static beam apertures.
     /// </summary>
     public sealed class JawInFieldPointClassifier
     {

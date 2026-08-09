@@ -117,6 +117,13 @@ The following existing `Uclh.XRT.Library` components are expected to be useful i
 
 Use `Uclh.XRT.Esapi.Core.EsapiContext` as the standard wrapper around the supplied `ScriptContext`.
 
+The reusable execution boundary is `BreastSurrogateRunner.Run(EsapiContext)`.
+The Eclipse `VMS.TPS.Script` entry point alone receives `ScriptContext` and
+immediately constructs `EsapiContext`. A future standalone executable can
+instead construct the same wrapper from the documented `(Patient, PlanSetup)`
+constructor. This keeps Eclipse entry-point mechanics out of the calculation
+runner and permits both interactive and batch hosts to use the same geometry.
+
 ### `Logger`
 
 Use `Uclh.XRT.Esapi.Core.Logger` for runtime diagnostics and timing.
@@ -371,15 +378,35 @@ finite-width opening requires `bank0 < bank1`; equal or crossed tips are
 classified as closed. Bank edges are inclusive with the same `1e-9 mm`
 floating-point tolerance as jaws. The point must pass both jaw and MLC tests.
 
-The ESAPI project will select the configured definition from `Beam.MLC.Model`
-and verify the mapping between ESAPI leaf indices and the negative-to-positive
-BLD-Y definition during Phase 9 Eclipse validation.
+The ESAPI project selects the configured definition from `Beam.MLC.Model`.
+Phase 9 Eclipse review confirmed that the logged representative leaves and bank
+positions correspond to the displayed aperture when ESAPI leaf index 0 maps to
+the most negative BLD-Y pair. Differences in Eclipse display units/scale did
+not change the observed correspondence.
 
 No model should be accepted unless its leaf geometry has been explicitly configured and validated.
 
 The first MLC implementation supports only this known clinical TrueBeam model.
 Additional models can be added later after their identifiers and physical
 boundaries are explicitly verified.
+
+### 10.1 Deferred effective leaf-tip calibration
+
+The primary gILF/gHIF definition remains the unexpanded geometric jaw-and-MLC
+aperture. Eclipse 50%-dose structures may extend beyond this aperture because
+they also reflect finite source size, scatter, depth, heterogeneity, beam
+profile, transmission and rounded MLC leaf-tip attenuation. A fixed leaf-tip
+offset must therefore not be introduced merely to match one plan.
+
+During the later audit/clinical-validation phase, retain the raw geometric
+result and investigate whether a separate, explicitly labelled effective
+leaf-tip offset consistently reduces bias against the legacy 50%-dose metric.
+If investigated, an offset `delta` expands only the MLC opening by changing the
+negative-X bank position to `position - delta` and the positive-X bank position
+to `position + delta`. The locally commissioned dosimetric leaf gap may inform
+candidate values, but no value is accepted without multi-plan validation. Raw
+and adjusted results must remain distinguishable and the raw result must not be
+silently replaced.
 
 ## 11. Static control-point validation
 
@@ -395,12 +422,14 @@ Before constructing the aperture, verify that all relevant control points have u
 
 If these differ materially, the beam is outside the version-1 scope and the calculation should stop for that beam.
 
-Phase 5 uses provisional integration tolerances of 0.01 degrees for gantry,
-collimator and patient-support angles, and 0.01 mm for jaw and leaf positions.
-Angles are compared circularly. After all control points pass this constancy
-check, control point 0 supplies the source-angle, collimator and jaw values used
-to construct the jaw-only Core aperture. These tolerances must be reviewed
-against a wider set of clinical plans before version 1 validation is complete.
+Phase 5 introduced provisional integration tolerances of 0.01 degrees for
+gantry, collimator and patient-support angles, and 0.01 mm for jaw and leaf
+positions. Angles are compared circularly. Phase 9 validates that each control
+point has a finite `2 x 60` leaf array and that every leaf position is unchanged
+within the position tolerance. Control point 0 then supplies the source angle,
+collimator, jaws and leaf positions used to construct the static Core aperture.
+These tolerances must be reviewed against a wider set of clinical plans before
+version 1 validation is complete.
 
 ## 12. Structure sampling
 
@@ -429,9 +458,26 @@ one voxel on each side and then clamped to the valid image dimensions. This
 prevents a contour-edge voxel from being omitted due to truncation while
 retaining the bounding-box performance benefit.
 
-For Phase 6 Eclipse integration, structure ID matching is case-insensitive.
-`IPS LUNG` is required and `Heart` is optional. When `Heart` is absent, lung
-sampling continues normally and the absence is recorded in the log.
+For ESAPI integration, structure ID matching is case-insensitive. Ipsilateral
+lung selection first looks for the established ID `IPS LUNG`. If it is present,
+it must be non-empty and is used without applying a fallback. If it is absent,
+the selector considers a fixed set of left/right whole-lung aliases. Separators
+and case are normalized, allowing `Lung_L`, `L Lung`, `Left Lung`, `LT Lung`
+and the corresponding right-sided forms. The normalized value must still match
+one of those complete aliases; names such as `Lung-PTV` remain ineligible. This
+prevents derived lung structures from being selected merely because their IDs
+contain the word "lung".
+
+Usable fallback candidates must have a segment and be non-empty. Their
+documented ESAPI `Structure.CenterPoint` values are ranked by three-dimensional
+Euclidean distance in DICOM millimetres to the `ANT MED` beam isocentre. The
+nearest candidate is selected. A distance tie within `0.01 mm`, duplicate
+case-insensitive `IPS LUNG` matches, invalid centres or no usable recognized
+candidate cause an explicit rejection. The reference isocentre, selection
+method, every candidate centre/distance and the selected ID are logged.
+
+`Heart` remains optional. When it is absent, lung sampling continues normally
+and the absence is recorded in the log.
 
 The initial per-voxel `Structure.IsPointInsideSegment` implementation remains
 the Eclipse validation reference. Segment-profile counts must agree with those
@@ -476,6 +522,12 @@ patient-space crop would not be geometrically valid.
 
 A configurable stride or other coarser sampling remains deferred until it has
 been compared with the full-resolution reference in a convergence study.
+
+Phase 11 is complete for the current single-plan calculation. Full-resolution
+segment-profile sampling and jaw/MLC classification were observed to be fast
+enough for present interactive use, so no stride or reduced-resolution mode is
+currently justified. Performance should be reassessed for a future search that
+evaluates many synthetic beam candidates per patient.
 
 ## 13. Result model
 
@@ -568,7 +620,44 @@ This should be used as an independent Eclipse-side debugging/validation aid for 
 
 It is not required for the production calculation itself.
 
-## 16. User interaction
+## 16. Batch audit and user interaction
+
+### 16.1 Batch-ready execution boundary
+
+`BreastSurrogateRunner` accepts the shared-library `EsapiContext`, not
+`ScriptContext`. Patient opening, course/plan lookup and context lifetime belong
+to the host. This repository must not acquire broader ARIA access merely because
+a separate standalone host is planned.
+
+The future batch host will be a separate, read-only ESAPI executable. Its input
+will identify patient, course and plan records. For each record it should open
+the patient through the supported ESAPI application workflow, locate the
+requested plan explicitly, construct `EsapiContext(patient, plan)`, run the
+geometry calculation, record success or a structured rejection, and close the
+patient before continuing sequentially.
+
+The audit dataset is intended to combine:
+
+- raw geometric gILF/gHIF;
+- legacy ILF/HIF calculated from explicitly configured structures in the
+  structure set;
+- lung and heart clinical-goal/DVH metrics from an explicitly identified final
+  clinical plan;
+- plan, beam, structure and calculation diagnostics needed to interpret a
+  failure or discrepancy.
+
+Structure identifiers, the relationship between surrogate and final plans,
+laterality rules, DVH presentation, clinical-goal definitions and output schema
+must be configured before implementing the audit; they must not be inferred
+silently. Batch outputs and logs must be stored in an appropriately controlled
+location because they contain patient identifiers.
+
+For true unattended use, calculation and presentation will need separating so
+that a reusable service returns structured results without displaying message
+boxes. The current runner/context change is the first enabling step, not the
+complete batch host.
+
+### 16.2 Deferred interactive UI
 
 The initial UI should be intentionally simple.
 
@@ -610,8 +699,35 @@ The script must not silently fall back to an approximation.
 
 The following should be resolved during development rather than guessed by Codex:
 
-1. ESAPI leaf-index direction for the configured Millennium 120 definition,
-   validated against Eclipse in Phase 9;
-2. acceptable static-angle/position tolerances;
-3. eventual automatic beam/structure selection rules;
-4. clinical thresholds for gILF/gHIF.
+1. acceptable static-angle/position tolerances;
+2. legacy ILF/HIF source-structure identifiers and formulae for the audit;
+3. mapping from each surrogate plan to its final clinical plan;
+4. lung/heart laterality, clinical-goal and DVH endpoint definitions;
+5. controlled batch input/output schema and storage location;
+6. eventual automatic beam/structure selection rules;
+7. clinical thresholds for gILF/gHIF.
+
+## 19. Future research: geometric tangent candidate search
+
+A possible post-version-1 extension is a read-only search over candidate
+tangent geometries. It could vary gantry angle, collimator angle, jaws and
+static MLC positions, derive an aperture that covers an explicitly selected PTV
+contour in BEV with defined margins, and rank deliverable candidates using raw
+gILF/gHIF and other declared geometric objectives.
+
+This must be described as geometric candidate ranking, not automatic selection
+of the clinically best plan. Minimizing gILF alone does not establish adequate
+target dose, acceptable heart/breast/contralateral exposure, robustness,
+clearance or overall deliverability. Candidate generation therefore requires
+explicit coverage constraints, machine limits, allowed angle ranges, collision
+rules, laterality conventions and manual clinical review. Promising geometric
+candidates must be validated against calculated dose before clinical use.
+
+The extension remains read-only: it simulates candidate geometry in Core and
+must not create or modify Eclipse beams or plans. ESAPI should extract the
+required contours and structure samples once; candidate construction and
+ranking should then use plain/Core data. If the candidate count makes runtime
+important, consider staged coarse-to-fine angle searches, reusing sampled organ
+points, rejecting candidates by cheap coverage/deliverability checks first,
+and parallelizing only ESAPI-independent Core work after all API data have been
+extracted safely.

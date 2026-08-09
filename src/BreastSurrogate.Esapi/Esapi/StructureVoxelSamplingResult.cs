@@ -4,7 +4,7 @@ using BreastSurrogate.Core.Calculation;
 namespace BreastSurrogate.Esapi.Esapi
 {
     /// <summary>
-    /// Aggregate structure-sampling diagnostics and jaw-only in-field result.
+    /// Aggregate structure-sampling diagnostics and geometric in-field result.
     /// </summary>
     public sealed class StructureVoxelSamplingResult
     {

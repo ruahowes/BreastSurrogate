@@ -316,11 +316,21 @@ Log:
 
 Run on:
 
-- required structure ID `IPS LUNG`;
+- preferred structure ID `IPS LUNG`;
+- recognized whole-lung aliases when `IPS LUNG` is absent, including
+  `Lung_L`/`Lung_R`, `L Lung`/`R Lung`, `Left Lung`/`Right Lung`, and
+  `LT Lung`/`RT Lung`;
 - optional structure ID `Heart`, when present.
 
-Structure ID matching is case-insensitive. A missing `IPS LUNG` is an input
-error; a missing `Heart` is logged but does not prevent lung sampling.
+Structure ID matching is case-insensitive. If `IPS LUNG` exists, require and
+use that non-empty structure. Otherwise select the usable recognized left or
+right whole-lung structure whose documented ESAPI centre point is closest in
+three-dimensional DICOM distance to the `ANT MED` isocentre. Log all candidate
+centres/distances and reject a tie within `0.01 mm` rather than guessing.
+Normalize case and common separators, but require a complete known alias rather
+than accepting arbitrary IDs containing "lung", because derived structures
+could then be selected. A
+missing `Heart` is logged but does not prevent lung sampling.
 
 The sampled volume does not need to match ESAPI volume exactly, but it should be plausibly close and stable. Large discrepancies must be investigated before continuing.
 
@@ -352,7 +362,7 @@ Values:
 - corresponding sampled in-field volumes;
 - corresponding percentages using ESAPI `Structure.Volume` as the denominator.
 
-Until Phase 10 provides explicit selection, require exactly one treatment beam
+Until Phase 14 provides explicit selection, require exactly one treatment beam
 with ID `ANT MED` and exactly one with ID `POST LAT`, matched case-insensitively.
 Use `ANT MED` as field 1 and `POST LAT` as field 2. Other treatment beams may
 remain in the plan but are logged and excluded from this calculation. Reject a
@@ -472,11 +482,160 @@ Compare the projected structure/aperture orientation with Eclipse BEV.
 
 MLC + jaw point classification agrees with Eclipse for representative static fields.
 
-## 12. Phase 10 — Minimal user interface
+The Phase 9 adapter accepts only the exact logged model identifier
+`Millennium 120`, requires a finite `2 x 60` array at every control point, and
+rejects leaf changes greater than the provisional `0.01 mm` static-position
+tolerance. It copies control point 0 into the tested Core `MlcAperture` after
+all static checks pass.
+
+ESAPI documents bank 0 as negative MLC X and bank 1 as positive MLC X. The
+adapter maps ESAPI leaf index 0 to the most negative BLD-Y leaf pair. Runtime
+logs include zero-based indices, one-based Varian leaf-pair numbers,
+representative pairs, and selected pair/bank positions for targeted debug
+points. Phase 9 Eclipse review confirmed that these representative positions
+correspond to the displayed MLC aperture despite Eclipse display-unit/scale
+differences. The resulting gILF was also close to the legacy 50%-dose value,
+providing a useful end-to-end plausibility check while remaining a distinct raw
+geometric metric.
+
+## 12. Phase 10 — Batch-ready execution boundary
 
 ### Objective
 
-Make the tool convenient enough for repeated clinical-development testing.
+Allow the same read-only calculation runner to be hosted by Eclipse now and by
+a future standalone batch executable.
+
+### Tasks
+
+- change `BreastSurrogateRunner.Run` to accept the shared-library
+  `EsapiContext` rather than `ScriptContext`;
+- keep `ScriptContext` confined to `VMS.TPS.Script.Execute`;
+- construct `EsapiContext` in `Script.Execute` before invoking the runner;
+- retain context validation inside the runner;
+- document that a future unattended host will require calculation results and
+  presentation/message boxes to be separated.
+
+Do not add patient-opening, course lookup or plan lookup to the script assembly
+in this phase.
+
+### Acceptance
+
+The Eclipse script and a future standalone host can enter the runner through
+the same documented `EsapiContext` boundary, and the existing calculation still
+builds and runs read-only.
+
+## 13. Phase 11 — Performance and sampling convergence
+
+**Status:** Complete for the current single-plan implementation.
+
+### Objective
+
+Determine whether full image-voxel sampling is sufficiently fast for both
+interactive use and a sequential audit batch.
+
+### Measure
+
+For representative lung/heart structures record:
+
+- voxel resolution;
+- candidate count;
+- structure count;
+- projection/classification time;
+- total runtime.
+
+If required, implement a sampling stride and compare, for example:
+
+- full resolution;
+- every second x/y voxel;
+- other clinically sensible reduced samplings.
+
+The full-resolution calculation is the reference.
+
+### Acceptance
+
+Choose the simplest sampling setting with adequate reproducibility and
+practical runtime. Do not optimise prematurely.
+
+Full-resolution segment-profile sampling and jaw/MLC classification were
+confirmed to be fast enough for current use. No coarser stride is required.
+Reopen performance work if the future geometric candidate search evaluates
+enough apertures per patient to make classification time material.
+
+## 14. Phase 12 — Standalone batch audit project
+
+### Objective
+
+Build a separate read-only executable that creates a comparison dataset for
+the geometric surrogate, legacy structure-derived surrogate and final clinical
+lung/heart metrics.
+
+### Input and execution
+
+Use an explicit input table containing at minimum:
+
+- patient ID;
+- course ID;
+- plan ID;
+- any distinct final-clinical-plan ID required by the audit design.
+
+For each row, the standalone ESAPI host should:
+
+1. open the patient using the supported ESAPI application API;
+2. locate the exact course and plan IDs, rejecting missing or duplicate matches;
+3. construct `EsapiContext(patient, plan)`;
+4. invoke a presentation-free BreastSurrogate calculation service;
+5. calculate legacy ILF/HIF only from explicitly configured source structures;
+6. extract a predefined set of lung/heart clinical-goal and DVH metrics from
+   the explicitly selected final plan;
+7. record structured outputs, warnings and failures;
+8. close the patient before processing the next row.
+
+The executable remains sequential unless ESAPI documentation explicitly
+supports another execution model. It must not call `BeginModifications()` or
+create/alter structures, plans or dose.
+
+Before implementation, define:
+
+- legacy ILF/HIF structure identifiers and formulae;
+- ipsilateral-lung and heart selection/laterality rules;
+- how the surrogate plan maps to the final clinical plan;
+- prescribed dose presentation and DVH binning;
+- exact clinical-goal/DVH endpoints;
+- CSV/JSON schema, units, missing-data representation and controlled output
+  location.
+
+### Acceptance
+
+A representative input batch completes without interactive prompts, preserves
+row-level failures, closes every patient cleanly, and produces an auditable
+comparison table without modifying ARIA data.
+
+## 15. Phase 13 — Clinical validation and surrogate calibration
+
+### Objective
+
+Use the batch audit dataset to determine whether the raw geometric metric is a
+useful predictor of final optimised dose and how it relates to the existing
+50%-dose surrogate.
+
+This is described separately in `validation-plan.md`.
+
+Retain raw gILF/gHIF as the primary geometric results. As a secondary analysis,
+test whether a clearly labelled effective MLC leaf-tip offset consistently
+reduces bias against the 50%-dose method. Candidate offsets may be informed by
+local commissioning data, but must be validated across representative plans;
+an adjusted metric must never silently replace the raw metric.
+
+No existing clinical gILF/gHIF threshold should be assumed valid until this
+phase is complete.
+
+## 16. Phase 14 — Minimal user interface
+
+### Objective
+
+Make the validated tool convenient for interactive clinical use after the
+batch audit and surrogate analysis have established the required selections and
+outputs.
 
 ### Initial UI
 
@@ -501,45 +660,46 @@ Do not implement automatic tangent/laterality inference yet.
 
 A user can select inputs and recalculate after field changes with minimal steps.
 
-## 13. Phase 11 — Performance and sampling convergence
+## 17. Phase 15 — Geometric tangent candidate search (post-version-1 research)
 
 ### Objective
 
-Determine whether full image-voxel sampling is sufficiently fast.
+Explore whether simulated, deliverable tangent geometries can be ranked to
+identify promising low-gILF starting configurations before dose optimisation.
 
-### Measure
+### Proposed scope
 
-For representative lung/heart structures record:
+- accept explicit PTV, ipsilateral lung and optional heart inputs;
+- define permitted gantry/collimator ranges and sampling increments;
+- project the PTV contour into each candidate BEV;
+- construct jaws and a static MLC aperture that cover the projected PTV using
+  explicit margins and machine constraints;
+- reject candidates that violate coverage, leaf/jaw travel, field-size,
+  clearance or other declared deliverability rules;
+- calculate raw gILF/gHIF and retain all stated objectives/constraints;
+- return a ranked set for manual review and subsequent dose calculation.
 
-- voxel resolution;
-- candidate count;
-- structure count;
-- projection/classification time;
-- total runtime.
+Do not describe the minimum-gILF candidate as the "best plan". This is a
+geometric starting-point search and cannot replace dose calculation, robustness
+assessment or clinical judgement. It must remain read-only and must not create
+or modify Eclipse beams/plans.
 
-If required, implement a sampling stride and compare, for example:
+### Performance approach
 
-- full resolution;
-- every second x/y voxel;
-- other clinically sensible reduced samplings.
-
-The full-resolution calculation is the reference.
+Extract contours and organ sample points once through ESAPI, then perform the
+candidate loop using Core data only. If required, use coarse-to-fine angle
+sampling, cheap early rejection and cached samples/projections. Parallel work
+is limited to ESAPI-independent Core calculations; ESAPI object access remains
+within the documented execution/threading model.
 
 ### Acceptance
 
-Choose the simplest sampling setting with adequate reproducibility and practical runtime. Do not optimise prematurely.
+On synthetic and retrospective test cases, every returned candidate satisfies
+the declared geometric coverage and deliverability rules, results are
+deterministic, and the ranking/runtime are characterized. Any claim of improved
+planning quality requires separate dose-based validation.
 
-## 14. Phase 12 — Clinical validation and surrogate calibration
-
-### Objective
-
-Determine whether the geometric metric is a useful predictor of final optimised dose and how it relates to the existing 50%-dose surrogate.
-
-This is described separately in `validation-plan.md`.
-
-No existing clinical gILF/gHIF threshold should be assumed valid until this phase is complete.
-
-## 15. Logging checklist during development
+## 18. Logging checklist during development
 
 The existing `Logger` should be considered part of the development instrumentation.
 
@@ -563,7 +723,7 @@ During coordinate debugging, log a few deliberately selected points through ever
 
 Avoid per-voxel logging in normal runs because it will distort performance and create unusable log files.
 
-## 16. How to use Codex for this project
+## 19. How to use Codex for this project
 
 Use Codex for one milestone at a time.
 
@@ -607,7 +767,7 @@ missing validation, and tests that could pass despite a mirrored beam
 coordinate system.
 ```
 
-## 17. Version-1 definition of done
+## 20. Version-1 definition of done
 
 Version 1 is complete when:
 

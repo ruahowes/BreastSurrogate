@@ -60,6 +60,9 @@
   <ItemGroup>
     <Compile Include="Esapi\BreastSurrogateRunner.cs" />
     <Compile Include="Esapi\EsapiBeamGeometryFactory.cs" />
+    <Compile Include="Esapi\IpsilateralLungSelectionException.cs" />
+    <Compile Include="Esapi\IpsilateralLungSelectionResult.cs" />
+    <Compile Include="Esapi\IpsilateralLungSelector.cs" />
     <Compile Include="Esapi\StructureVoxelSampler.cs" />
     <Compile Include="Esapi\StructureVoxelSamplingException.cs" />
     <Compile Include="Esapi\StructureVoxelSamplingResult.cs" />

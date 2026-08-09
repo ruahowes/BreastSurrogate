@@ -1,8 +1,8 @@
 using System;
-using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using BreastSurrogate.Esapi.Esapi;
+using Uclh.XRT.Esapi.Core;
 using VMS.TPS.Common.Model.API;
 
 namespace VMS.TPS
@@ -26,8 +26,9 @@ namespace VMS.TPS
         {
             try
             {
+                var esapiContext = new EsapiContext(context);
                 var runner = new BreastSurrogateRunner(LogDirectory);
-                runner.Run(context);
+                runner.Run(esapiContext);
             }
             catch (Exception exception)
             {

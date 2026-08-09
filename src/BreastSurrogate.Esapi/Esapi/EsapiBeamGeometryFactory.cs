@@ -9,7 +9,7 @@ using VMS.TPS.Common.Model.Types;
 namespace BreastSurrogate.Esapi.Esapi
 {
     /// <summary>
-    /// Creates a validated jaw-only Core aperture from a real ESAPI beam.
+    /// Creates a validated static jaw-and-MLC Core aperture from a real ESAPI beam.
     /// </summary>
     public sealed class EsapiBeamGeometryFactory
     {
@@ -28,6 +28,7 @@ namespace BreastSurrogate.Esapi.Esapi
             }
 
             ValidateBeamType(beam, patientOrientation);
+            MlcGeometryDefinition mlcGeometry = GetSupportedMlcGeometry(beam);
 
             List<ControlPoint> controlPoints = beam.ControlPoints.ToList();
             if (controlPoints.Count == 0)
@@ -36,8 +37,12 @@ namespace BreastSurrogate.Esapi.Esapi
             }
 
             ControlPoint firstControlPoint = controlPoints[0];
-            ValidateControlPointValues(beam, firstControlPoint, 0);
-            ValidateControlPointConstancy(beam, firstControlPoint, controlPoints);
+            ValidateControlPointValues(beam, firstControlPoint, 0, mlcGeometry);
+            ValidateControlPointConstancy(
+                beam,
+                firstControlPoint,
+                controlPoints,
+                mlcGeometry);
 
             try
             {
@@ -49,13 +54,16 @@ namespace BreastSurrogate.Esapi.Esapi
                     firstControlPoint.CollimatorAngle);
                 var projection = new BeamProjection(coordinateSystem);
                 var jaws = new JawAperture(firstControlPoint.JawPositions);
-                return new StaticBeamAperture(projection, jaws);
+                var mlc = new MlcAperture(
+                    mlcGeometry,
+                    ConvertLeafPositions(firstControlPoint.LeafPositions));
+                return new StaticBeamAperture(projection, jaws, mlc);
             }
             catch (ArgumentException exception)
             {
                 throw Unsupported(
                     beam,
-                    "contains invalid source, isocentre, beam-axis, collimator, or jaw geometry",
+                    "contains invalid source, isocentre, beam-axis, collimator, jaw, or MLC geometry",
                     exception);
             }
         }
@@ -125,12 +133,13 @@ namespace BreastSurrogate.Esapi.Esapi
         private static void ValidateControlPointConstancy(
             Beam beam,
             ControlPoint reference,
-            IList<ControlPoint> controlPoints)
+            IList<ControlPoint> controlPoints,
+            MlcGeometryDefinition mlcGeometry)
         {
             for (int index = 1; index < controlPoints.Count; index++)
             {
                 ControlPoint candidate = controlPoints[index];
-                ValidateControlPointValues(beam, candidate, index);
+                ValidateControlPointValues(beam, candidate, index, mlcGeometry);
 
                 if (!AnglesEqual(reference.GantryAngle, candidate.GantryAngle))
                 {
@@ -159,7 +168,11 @@ namespace BreastSurrogate.Esapi.Esapi
             }
         }
 
-        private static void ValidateControlPointValues(Beam beam, ControlPoint controlPoint, int index)
+        private static void ValidateControlPointValues(
+            Beam beam,
+            ControlPoint controlPoint,
+            int index,
+            MlcGeometryDefinition mlcGeometry)
         {
             if (!IsFinite(controlPoint.GantryAngle)
                 || !IsFinite(controlPoint.CollimatorAngle)
@@ -193,6 +206,25 @@ namespace BreastSurrogate.Esapi.Esapi
             }
 
             float[,] leaves = controlPoint.LeafPositions;
+            if (leaves == null
+                || leaves.GetLength(0) != 2
+                || leaves.GetLength(1) != mlcGeometry.LeafPairCount)
+            {
+                string dimensions = leaves == null
+                    ? "<null>"
+                    : leaves.GetLength(0) + " x " + leaves.GetLength(1);
+                throw Unsupported(
+                    beam,
+                    "has leaf-array dimensions "
+                    + dimensions
+                    + " at control point "
+                    + index
+                    + "; model '"
+                    + mlcGeometry.ModelIdentifier
+                    + "' requires 2 x "
+                    + mlcGeometry.LeafPairCount);
+            }
+
             for (int bank = 0; bank < leaves.GetLength(0); bank++)
             {
                 for (int leaf = 0; leaf < leaves.GetLength(1); leaf++)
@@ -205,6 +237,49 @@ namespace BreastSurrogate.Esapi.Esapi
                     }
                 }
             }
+        }
+
+        private static MlcGeometryDefinition GetSupportedMlcGeometry(Beam beam)
+        {
+            if (beam.MLC == null)
+            {
+                throw Unsupported(beam, "has no MLC hardware description");
+            }
+
+            MlcGeometryDefinition geometry = SupportedMlcGeometries.Millennium120;
+            if (!string.Equals(
+                beam.MLC.Model,
+                geometry.ModelIdentifier,
+                StringComparison.Ordinal))
+            {
+                throw Unsupported(
+                    beam,
+                    "uses unsupported MLC model '"
+                    + (beam.MLC.Model ?? "<null>")
+                    + "'; the only configured model is '"
+                    + geometry.ModelIdentifier
+                    + "'");
+            }
+
+            return geometry;
+        }
+
+        private static double[,] ConvertLeafPositions(float[,] leafPositions)
+        {
+            int bankCount = leafPositions.GetLength(0);
+            int leafPairCount = leafPositions.GetLength(1);
+            var converted = new double[bankCount, leafPairCount];
+
+            for (int bankIndex = 0; bankIndex < bankCount; bankIndex++)
+            {
+                for (int leafPairIndex = 0; leafPairIndex < leafPairCount; leafPairIndex++)
+                {
+                    converted[bankIndex, leafPairIndex] =
+                        leafPositions[bankIndex, leafPairIndex];
+                }
+            }
+
+            return converted;
         }
 
         private static bool AnglesEqual(double left, double right)

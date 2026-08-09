@@ -16,14 +16,13 @@ using VMS.TPS.Common.Model.Types;
 namespace BreastSurrogate.Esapi.Esapi
 {
     /// <summary>
-    /// Read-only development runner for inspecting beam geometry and structure sampling.
+    /// Read-only calculation runner hosted through the shared-library ESAPI context.
     /// </summary>
     public sealed class BreastSurrogateRunner
     {
         private const string ApplicationName = "BreastSurrogate";
         private const string RequiredField1BeamId = "ANT MED";
         private const string RequiredField2BeamId = "POST LAT";
-        private const string RequiredLungId = "IPS LUNG";
         private const string OptionalHeartId = "Heart";
         private const string UnknownPatientId = "NoPatient";
 
@@ -39,7 +38,7 @@ namespace BreastSurrogate.Esapi.Esapi
             _logDirectory = logDirectory;
         }
 
-        public void Run(ScriptContext scriptContext)
+        public void Run(EsapiContext context)
         {
             var logger = new Logger(_logDirectory, ApplicationName, true);
             var stopwatch = Stopwatch.StartNew();
@@ -49,20 +48,19 @@ namespace BreastSurrogate.Esapi.Esapi
             {
                 logger.LogMethodStart();
 
-                string validationError = ValidateContext(scriptContext);
+                string validationError = ValidateContext(context);
                 if (validationError != null)
                 {
-                    if (scriptContext != null && scriptContext.Patient != null)
+                    if (context != null && context.pa != null)
                     {
-                        patientId = scriptContext.Patient.Id;
+                        patientId = context.pa.Id;
                     }
 
                     ReportFailure(logger, stopwatch, patientId, validationError);
                     return;
                 }
 
-                patientId = scriptContext.Patient.Id;
-                var context = new EsapiContext(scriptContext);
+                patientId = context.pa.Id;
 
                 LogContext(logger, context);
 
@@ -93,7 +91,7 @@ namespace BreastSurrogate.Esapi.Esapi
                         logger,
                         stopwatch,
                         patientId,
-                        "Phase 7 requires exactly one treatment beam with ID '"
+                        "Phase 9 requires exactly one treatment beam with ID '"
                         + RequiredField1BeamId
                         + "' and exactly one with ID '"
                         + RequiredField2BeamId
@@ -116,38 +114,36 @@ namespace BreastSurrogate.Esapi.Esapi
                         beam,
                         context.im.ImagingOrientation);
                     apertures.Add(aperture);
-                    LogCoreGeometry(logger, aperture, treatmentBeams.IndexOf(beam));
+                    LogCoreGeometry(
+                        logger,
+                        aperture,
+                        treatmentBeams.IndexOf(beam),
+                        beam.ControlPoints.Count());
                 }
 
-                logger.Log("Phase7.Field1BeamId", selectedBeams[0].Id);
-                logger.Log("Phase7.Field2BeamId", selectedBeams[1].Id);
+                logger.Log("Phase9.Field1BeamId", selectedBeams[0].Id);
+                logger.Log("Phase9.Field2BeamId", selectedBeams[1].Id);
                 logger.Log(
-                    "Phase7.IgnoredTreatmentBeamCount",
+                    "Phase9.IgnoredTreatmentBeamCount",
                     treatmentBeams.Count - selectedBeams.Count);
 
-                Structure ipsilateralLung = context.ss.Structures.FirstOrDefault(
-                    structure => string.Equals(
-                        structure.Id,
-                        RequiredLungId,
-                        StringComparison.OrdinalIgnoreCase));
-                if (ipsilateralLung == null)
-                {
-                    ReportFailure(
-                        logger,
-                        stopwatch,
-                        patientId,
-                        "Phase 7 requires a structure with ID '" + RequiredLungId + "'.");
-                    return;
-                }
+                var lungSelector = new IpsilateralLungSelector();
+                IpsilateralLungSelectionResult lungSelection = lungSelector.Select(
+                    context.ss.Structures,
+                    selectedBeams[0].IsocenterPosition);
+                Structure ipsilateralLung = lungSelection.SelectedStructure;
+                LogIpsilateralLungSelection(logger, lungSelection);
 
                 Structure heart = context.ss.Structures.FirstOrDefault(
                     structure => string.Equals(
                         structure.Id,
                         OptionalHeartId,
                         StringComparison.OrdinalIgnoreCase));
-                logger.Log("Phase7.IpsilateralLungStatus", "Present");
                 logger.Log(
-                    "Phase7.HeartStatus",
+                    "Phase9.IpsilateralLungStatus",
+                    "Selected '" + ipsilateralLung.Id + "'");
+                logger.Log(
+                    "Phase9.HeartStatus",
                     heart == null ? "Not present (optional)" : "Present");
 
                 var targetStructures = new List<Structure> { ipsilateralLung };
@@ -178,21 +174,21 @@ namespace BreastSurrogate.Esapi.Esapi
                 }
 
                 logger.Log(
-                    "Phase7.gILFPercent",
+                    "Phase9.gILFPercent",
                     FormatDouble(samplingResults[0].InFieldResult.EitherFieldPercentageOfEsapiVolume));
                 if (heart != null)
                 {
                     logger.Log(
-                        "Phase7.gHIFPercent",
+                        "Phase9.gHIFPercent",
                         FormatDouble(samplingResults[1].InFieldResult.EitherFieldPercentageOfEsapiVolume));
                 }
                 else
                 {
-                    logger.Log("Phase7.gHIFPercent", "<unavailable: Heart not present>");
+                    logger.Log("Phase9.gHIFPercent", "<unavailable: Heart not present>");
                 }
 
                 stopwatch.Stop();
-                logger.Log("Phase7.TotalElapsedMs", stopwatch.ElapsedMilliseconds);
+                logger.Log("Phase9.TotalElapsedMs", stopwatch.ElapsedMilliseconds);
                 logger.Log("Status", "Success");
 
                 string logError = TryWriteLog(logger, patientId);
@@ -209,7 +205,7 @@ namespace BreastSurrogate.Esapi.Esapi
                 }
 
                 MessageBox.Show(
-                    FormatPhase7Summary(samplingResults, heart == null)
+                    FormatPhase9Summary(samplingResults, heart == null)
                         + "\nDebug log directory:\n"
                         + _logDirectory,
                     ApplicationName,
@@ -217,6 +213,10 @@ namespace BreastSurrogate.Esapi.Esapi
                     MessageBoxImage.Information);
             }
             catch (UnsupportedBeamGeometryException exception)
+            {
+                ReportFailure(logger, stopwatch, patientId, exception.Message);
+            }
+            catch (IpsilateralLungSelectionException exception)
             {
                 ReportFailure(logger, stopwatch, patientId, exception.Message);
             }
@@ -230,7 +230,7 @@ namespace BreastSurrogate.Esapi.Esapi
                 logger.Log("Status", "Unexpected failure");
                 logger.Log("ExceptionType", exception.GetType().FullName);
                 logger.Log("ExceptionMessage", exception.Message);
-                logger.Log("Phase7.TotalElapsedMs", stopwatch.ElapsedMilliseconds);
+                logger.Log("Phase9.TotalElapsedMs", stopwatch.ElapsedMilliseconds);
 
                 string logError = TryWriteLog(logger, patientId);
                 string logMessage = logError == null
@@ -247,29 +247,29 @@ namespace BreastSurrogate.Esapi.Esapi
             }
         }
 
-        private static string ValidateContext(ScriptContext scriptContext)
+        private static string ValidateContext(EsapiContext context)
         {
-            if (scriptContext == null)
+            if (context == null)
             {
-                return "Eclipse did not provide a script context.";
+                return "No ESAPI context was provided.";
             }
 
-            if (scriptContext.Patient == null)
+            if (context.pa == null)
             {
-                return "No patient is open. Open a patient before running BreastSurrogate.";
+                return "The ESAPI context does not contain a patient.";
             }
 
-            if (scriptContext.PlanSetup == null)
+            if (context.ps == null)
             {
-                return "No plan is open. Open a treatment plan before running BreastSurrogate.";
+                return "The ESAPI context does not contain a treatment plan.";
             }
 
-            if (scriptContext.StructureSet == null)
+            if (context.ss == null)
             {
                 return "The open plan has no associated structure set.";
             }
 
-            if (scriptContext.Image == null)
+            if (context.im == null)
             {
                 return "The open plan has no associated 3D image.";
             }
@@ -355,7 +355,8 @@ namespace BreastSurrogate.Esapi.Esapi
         private static void LogCoreGeometry(
             Logger logger,
             StaticBeamAperture aperture,
-            int beamIndex)
+            int beamIndex,
+            int controlPointCount)
         {
             string prefix = "Beam[" + beamIndex.ToString(CultureInfo.InvariantCulture) + "].Core.";
             BeamCoordinateSystem coordinates = aperture.Projection.CoordinateSystem;
@@ -373,6 +374,29 @@ namespace BreastSurrogate.Esapi.Esapi
             logger.Log(prefix + "UAxisBldX", FormatVector(coordinates.UAxis));
             logger.Log(prefix + "VAxisBldY", FormatVector(coordinates.VAxis));
             logger.Log(prefix + "ValidatedJawBoundsBldMm", FormatRectangle(aperture.Jaws.Bounds));
+
+            MlcAperture mlc = aperture.Mlc;
+            logger.Log(prefix + "ConfiguredMlcModel", mlc.GeometryDefinition.ModelIdentifier);
+            logger.Log(
+                prefix + "ValidatedLeafArrayDimensions",
+                FormatDimensions(2, mlc.GeometryDefinition.LeafPairCount));
+            logger.Log(
+                prefix + "MlcLeafSpanYBldMm",
+                FormatDouble(mlc.GeometryDefinition.MinimumYBldMm)
+                + ".."
+                + FormatDouble(mlc.GeometryDefinition.MaximumYBldMm));
+            logger.Log(
+                prefix + "MlcBankConvention",
+                "Bank 0 = negative BLD X; bank 1 = positive BLD X (ESAPI documented)");
+            logger.Log(
+                prefix + "MlcLeafIndexDirection",
+                "Leaf index 0 = negative BLD Y; validated against Eclipse representative leaves");
+            logger.Log(
+                prefix + "MlcStaticControlPointValidation",
+                "Validated unchanged leaf positions across "
+                + controlPointCount.ToString(CultureInfo.InvariantCulture)
+                + " control points");
+            LogRepresentativeMlcLeaves(logger, mlc, prefix);
 
             LogProjectionDebug(logger, aperture, prefix, "Isocentre", coordinates.Isocentre);
             LogProjectionDebug(
@@ -411,6 +435,64 @@ namespace BreastSurrogate.Esapi.Esapi
             logger.Log(prefix + "XBldMm", FormatDouble(projected.XBld));
             logger.Log(prefix + "YBldMm", FormatDouble(projected.YBld));
             logger.Log(prefix + "InsideJaws", aperture.Jaws.Contains(projected.XBld, projected.YBld));
+
+            int leafPairIndex;
+            if (!aperture.Mlc.GeometryDefinition.TryGetLeafPairIndex(
+                projected.YBld,
+                out leafPairIndex))
+            {
+                logger.Log(prefix + "SelectedLeafPairIndexZeroBased", "<outside MLC leaf span>");
+                logger.Log(prefix + "InsideMlc", false);
+            }
+            else
+            {
+                logger.Log(prefix + "SelectedLeafPairIndexZeroBased", leafPairIndex);
+                logger.Log(prefix + "SelectedVarianLeafPairNumber", leafPairIndex + 1);
+                logger.Log(
+                    prefix + "SelectedLeafYBoundsBldMm",
+                    FormatDouble(aperture.Mlc.GeometryDefinition.GetLeafLowerBoundaryMm(leafPairIndex))
+                    + ".."
+                    + FormatDouble(aperture.Mlc.GeometryDefinition.GetLeafUpperBoundaryMm(leafPairIndex)));
+                logger.Log(
+                    prefix + "NegativeXBankPositionMm",
+                    FormatDouble(aperture.Mlc.GetNegativeXBankPositionMm(leafPairIndex)));
+                logger.Log(
+                    prefix + "PositiveXBankPositionMm",
+                    FormatDouble(aperture.Mlc.GetPositiveXBankPositionMm(leafPairIndex)));
+                logger.Log(
+                    prefix + "InsideMlc",
+                    aperture.Mlc.Contains(projected.XBld, projected.YBld));
+            }
+
+            logger.Log(prefix + "InsideFinalAperture", aperture.Contains(patientPoint));
+        }
+
+        private static void LogRepresentativeMlcLeaves(
+            Logger logger,
+            MlcAperture mlc,
+            string beamPrefix)
+        {
+            int[] representativeLeafPairIndices = { 0, 9, 10, 29, 30, 49, 50, 59 };
+
+            foreach (int leafPairIndex in representativeLeafPairIndices)
+            {
+                string prefix = beamPrefix
+                    + "MlcLeaf["
+                    + leafPairIndex.ToString(CultureInfo.InvariantCulture)
+                    + "].";
+                logger.Log(prefix + "VarianLeafPairNumber", leafPairIndex + 1);
+                logger.Log(
+                    prefix + "YBoundsBldMm",
+                    FormatDouble(mlc.GeometryDefinition.GetLeafLowerBoundaryMm(leafPairIndex))
+                    + ".."
+                    + FormatDouble(mlc.GeometryDefinition.GetLeafUpperBoundaryMm(leafPairIndex)));
+                logger.Log(
+                    prefix + "NegativeXBankPositionMm",
+                    FormatDouble(mlc.GetNegativeXBankPositionMm(leafPairIndex)));
+                logger.Log(
+                    prefix + "PositiveXBankPositionMm",
+                    FormatDouble(mlc.GetPositiveXBankPositionMm(leafPairIndex)));
+            }
         }
 
         private static void LogStructureSampling(
@@ -420,7 +502,7 @@ namespace BreastSurrogate.Esapi.Esapi
             StructureVoxelSamplingResult result,
             int structureIndex)
         {
-            string prefix = "Phase7.StructureCalculation["
+            string prefix = "Phase9.StructureCalculation["
                 + structureIndex.ToString(CultureInfo.InvariantCulture)
                 + "].";
             var bounds = structure.MeshGeometry.Bounds;
@@ -460,6 +542,32 @@ namespace BreastSurrogate.Esapi.Esapi
             logger.LogTiming(prefix + "Elapsed", result.ElapsedMilliseconds);
         }
 
+        private static void LogIpsilateralLungSelection(
+            Logger logger,
+            IpsilateralLungSelectionResult result)
+        {
+            const string prefix = "Phase9.IpsilateralLungSelection.";
+            logger.Log(prefix + "Method", result.SelectionMethod);
+            logger.Log(prefix + "SelectedStructureId", result.SelectedStructure.Id);
+            logger.Log(prefix + "ReferenceIsocentreDicomMm", FormatVector(result.ReferenceIsocentre));
+            logger.Log(prefix + "CandidateCount", result.Candidates.Count);
+
+            for (int index = 0; index < result.Candidates.Count; index++)
+            {
+                IpsilateralLungCandidate candidate = result.Candidates[index];
+                string candidatePrefix = prefix
+                    + "Candidate["
+                    + index.ToString(CultureInfo.InvariantCulture)
+                    + "].";
+                logger.Log(candidatePrefix + "StructureId", candidate.Structure.Id);
+                logger.Log(candidatePrefix + "DicomType", candidate.Structure.DicomType);
+                logger.Log(candidatePrefix + "CenterPointDicomMm", FormatVector(candidate.CenterPoint));
+                logger.Log(
+                    candidatePrefix + "DistanceToIsocentreMm",
+                    FormatDouble(candidate.DistanceToIsocentreMm));
+            }
+        }
+
         private static void LogInFieldResult(
             Logger logger,
             string prefix,
@@ -488,12 +596,12 @@ namespace BreastSurrogate.Esapi.Esapi
                 FormatDouble(result.BothFieldsPercentageOfEsapiVolume));
         }
 
-        private static string FormatPhase7Summary(
+        private static string FormatPhase9Summary(
             IList<StructureVoxelSamplingResult> results,
             bool heartWasAbsent)
         {
             var summary = new StringBuilder();
-            summary.Append("BreastSurrogate Phase 7 jaw-only results\n\n");
+            summary.Append("BreastSurrogate Phase 9 jaw + MLC results\n\n");
 
             for (int index = 0; index < results.Count; index++)
             {
@@ -518,7 +626,7 @@ namespace BreastSurrogate.Esapi.Esapi
                 summary.Append("\nHeart was not present; lung sampling completed normally.\n");
             }
 
-            summary.Append("\nDevelopment result: jaws only; MLC is not included.\n");
+            summary.Append("\nDevelopment result: jaws and Millennium 120 MLC included.\n");
 
             return summary.ToString();
         }
@@ -532,7 +640,7 @@ namespace BreastSurrogate.Esapi.Esapi
             stopwatch.Stop();
             logger.Log("Status", "Input rejected");
             logger.Log("FailureReason", message);
-            logger.Log("Phase7.TotalElapsedMs", stopwatch.ElapsedMilliseconds);
+            logger.Log("Phase9.TotalElapsedMs", stopwatch.ElapsedMilliseconds);
 
             string logError = TryWriteLog(logger, patientId);
             string logMessage = logError == null
