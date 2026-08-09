@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
+using BreastSurrogate.Core.Apertures;
+using BreastSurrogate.Core.Geometry;
 using Uclh.XRT.Esapi.Core;
 using Uclh.XRT.Esapi.Utilities;
 using VMS.TPS.Common.Model.API;
@@ -73,13 +75,20 @@ namespace BreastSurrogate.Esapi.Esapi
                     return;
                 }
 
+                var factory = new EsapiBeamGeometryFactory();
                 for (int beamIndex = 0; beamIndex < treatmentBeams.Count; beamIndex++)
                 {
-                    LogBeam(logger, treatmentBeams[beamIndex], beamIndex);
+                    Beam beam = treatmentBeams[beamIndex];
+                    LogBeam(logger, beam, beamIndex);
+
+                    StaticBeamAperture aperture = factory.Create(
+                        beam,
+                        context.im.ImagingOrientation);
+                    LogCoreGeometry(logger, aperture, beamIndex);
                 }
 
                 stopwatch.Stop();
-                logger.LogTiming("Phase4ContextInspection", stopwatch.ElapsedMilliseconds);
+                logger.LogTiming("Phase5BeamGeometryInspection", stopwatch.ElapsedMilliseconds);
                 logger.Log("Status", "Success");
 
                 string logError = TryWriteLog(logger, patientId);
@@ -96,7 +105,7 @@ namespace BreastSurrogate.Esapi.Esapi
                 }
 
                 MessageBox.Show(
-                    "BreastSurrogate Phase 4 inspection completed for "
+                    "BreastSurrogate Phase 5 jaw-geometry validation completed for "
                     + treatmentBeams.Count
                     + " treatment beam(s).\n\nDebug log directory:\n"
                     + _logDirectory,
@@ -104,13 +113,17 @@ namespace BreastSurrogate.Esapi.Esapi
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
             }
+            catch (UnsupportedBeamGeometryException exception)
+            {
+                ReportFailure(logger, stopwatch, patientId, exception.Message);
+            }
             catch (Exception exception)
             {
                 stopwatch.Stop();
                 logger.Log("Status", "Unexpected failure");
                 logger.Log("ExceptionType", exception.GetType().FullName);
                 logger.Log("ExceptionMessage", exception.Message);
-                logger.LogTiming("Phase4ContextInspection", stopwatch.ElapsedMilliseconds);
+                logger.LogTiming("Phase5BeamGeometryInspection", stopwatch.ElapsedMilliseconds);
 
                 string logError = TryWriteLog(logger, patientId);
                 string logMessage = logError == null
@@ -182,6 +195,9 @@ namespace BreastSurrogate.Esapi.Esapi
             logger.Log(prefix + "IsocentreDicomMm", FormatVector(beam.IsocenterPosition));
             logger.Log(prefix + "ControlPointCount", controlPoints.Count);
             logger.Log(prefix + "MlcModel", beam.MLC == null ? "<none>" : beam.MLC.Model);
+            logger.Log(prefix + "MlcPlanType", beam.MLCPlanType);
+            logger.Log(prefix + "EnergyMode", beam.EnergyModeDisplayName);
+            logger.Log(prefix + "ArcLengthDeg", FormatDouble(beam.ArcLength));
 
             if (controlPoints.Count == 0)
             {
@@ -229,6 +245,67 @@ namespace BreastSurrogate.Esapi.Esapi
             }
         }
 
+        private static void LogCoreGeometry(
+            Logger logger,
+            StaticBeamAperture aperture,
+            int beamIndex)
+        {
+            string prefix = "Beam[" + beamIndex.ToString(CultureInfo.InvariantCulture) + "].Core.";
+            BeamCoordinateSystem coordinates = aperture.Projection.CoordinateSystem;
+
+            logger.Log(prefix + "StaticGeometryValidation", "Supported");
+            logger.Log(prefix + "SelectedControlPointIndex", 0);
+            logger.Log(prefix + "ReferenceSuperiorDicom", "(0, 0, 1)");
+            logger.Log(
+                prefix + "AngleToleranceDeg",
+                FormatDouble(EsapiBeamGeometryFactory.AngleToleranceDegrees));
+            logger.Log(
+                prefix + "PositionToleranceMm",
+                FormatDouble(EsapiBeamGeometryFactory.PositionToleranceMm));
+            logger.Log(prefix + "WAxisSourceToIsocentre", FormatVector(coordinates.WAxis));
+            logger.Log(prefix + "UAxisBldX", FormatVector(coordinates.UAxis));
+            logger.Log(prefix + "VAxisBldY", FormatVector(coordinates.VAxis));
+            logger.Log(prefix + "ValidatedJawBoundsBldMm", FormatRectangle(aperture.Jaws.Bounds));
+
+            LogProjectionDebug(logger, aperture, prefix, "Isocentre", coordinates.Isocentre);
+            LogProjectionDebug(
+                logger,
+                aperture,
+                prefix,
+                "DicomPlus10X",
+                coordinates.Isocentre + new VVector(10.0, 0.0, 0.0));
+            LogProjectionDebug(
+                logger,
+                aperture,
+                prefix,
+                "DicomPlus10Y",
+                coordinates.Isocentre + new VVector(0.0, 10.0, 0.0));
+            LogProjectionDebug(
+                logger,
+                aperture,
+                prefix,
+                "DicomPlus10Z",
+                coordinates.Isocentre + new VVector(0.0, 0.0, 10.0));
+        }
+
+        private static void LogProjectionDebug(
+            Logger logger,
+            StaticBeamAperture aperture,
+            string beamPrefix,
+            string pointName,
+            VVector patientPoint)
+        {
+            ProjectedBeamPoint projected = aperture.Projection.Project(patientPoint);
+            string prefix = beamPrefix + "DebugPoint[" + pointName + "].";
+
+            logger.Log(prefix + "DicomPointMm", FormatVector(patientPoint));
+            logger.Log(prefix + "ProjectionParameter", FormatDouble(projected.ProjectionParameter));
+            logger.Log(prefix + "ProjectedDicomPointMm", FormatVector(projected.ProjectedPoint));
+            logger.Log(prefix + "XBldMm", FormatDouble(projected.XBld));
+            logger.Log(prefix + "YBldMm", FormatDouble(projected.YBld));
+            logger.Log(prefix + "InsideJaws", aperture.Jaws.Contains(projected.XBld, projected.YBld));
+        }
+
         private void ReportFailure(
             Logger logger,
             Stopwatch stopwatch,
@@ -238,7 +315,7 @@ namespace BreastSurrogate.Esapi.Esapi
             stopwatch.Stop();
             logger.Log("Status", "Input rejected");
             logger.Log("FailureReason", message);
-            logger.LogTiming("Phase4ContextInspection", stopwatch.ElapsedMilliseconds);
+            logger.LogTiming("Phase5BeamGeometryInspection", stopwatch.ElapsedMilliseconds);
 
             string logError = TryWriteLog(logger, patientId);
             string logMessage = logError == null

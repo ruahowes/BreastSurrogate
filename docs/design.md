@@ -359,6 +359,13 @@ Before constructing the aperture, verify that all relevant control points have u
 
 If these differ materially, the beam is outside the version-1 scope and the calculation should stop for that beam.
 
+Phase 5 uses provisional integration tolerances of 0.01 degrees for gantry,
+collimator and patient-support angles, and 0.01 mm for jaw and leaf positions.
+Angles are compared circularly. After all control points pass this constancy
+check, control point 0 supplies the source-angle, collimator and jaw values used
+to construct the jaw-only Core aperture. These tolerances must be reviewed
+against a wider set of clinical plans before version 1 validation is complete.
+
 ## 12. Structure sampling
 
 ### 12.1 Primary approach

@@ -308,9 +308,11 @@ Log:
 
 Run on:
 
+- Structure named "test" initially
+
+Once validated, replace with:
 - ipsilateral lung;
 - heart;
-- at least one smaller/simple test structure if available.
 
 The sampled volume does not need to match ESAPI volume exactly, but it should be plausibly close and stable. Large discrepancies must be investigated before continuing.
 
