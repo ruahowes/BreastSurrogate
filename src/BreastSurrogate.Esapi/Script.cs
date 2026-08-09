@@ -1,5 +1,8 @@
+using System;
+using System.IO;
 using System.Runtime.CompilerServices;
-using Uclh.XRT.Esapi.Core;
+using System.Windows;
+using BreastSurrogate.Esapi.Esapi;
 using VMS.TPS.Common.Model.API;
 
 namespace VMS.TPS
@@ -13,13 +16,27 @@ namespace VMS.TPS
         {
         }
 
+        string LogDirectory = @"\\Client\O$\ESAPI\WIPScripts\RH_scripting_wip\BreastSurrogate\Logs";
+        
         /// <summary>
         /// Called by Eclipse when the script is launched.
         /// </summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
         public void Execute(ScriptContext context)
         {
-            new EsapiContext(context);
+            try
+            {
+                var runner = new BreastSurrogateRunner(LogDirectory);
+                runner.Run(context);
+            }
+            catch (Exception exception)
+            {
+                MessageBox.Show(
+                    "BreastSurrogate could not start.\n\n" + exception.Message,
+                    "BreastSurrogate",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
         }
     }
 }

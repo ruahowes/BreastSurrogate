@@ -236,7 +236,7 @@ Construct a validated Core `StaticBeamAperture` from a real ESAPI `Beam`.
 
 Responsibilities:
 
-- select/read the relevant control point;
+- use first control point for each treatment field (assume no MLC/Jaw modulation at this point);
 - obtain source location using the control-point gantry angle;
 - obtain isocentre;
 - read angles and jaws;
