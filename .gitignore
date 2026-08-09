@@ -1,0 +1,34 @@
+# Ignore build output
+
+bin/
+obj/
+*.dll
+*.pdb
+*.cache
+*.tmp
+
+# Ignore ESAPI-specific build outputs
+*.esapi.dll
+
+# Ignore user-specific or IDE files
+.vscode/
+.vs/
+*.user
+*.suo
+
+# Ignore Excel and logs
+*.xlsx
+*.log
+*.zip
+
+#Ignore Documents
+Documents/
+
+# Ignore temp/generated files
+**/TemporaryGeneratedFile_*.cs
+
+# Ignore Git internal files
+*.orig
+
+# Optional: ignore test files or config templates if not meant for version control
+

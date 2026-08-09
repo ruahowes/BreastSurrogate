@@ -1,0 +1,2412 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Uclh.XRT.Library</name>
+    </assembly>
+    <members>
+        <member name="T:Uclh.XRT.Esapi.Core.EsapiContext">
+            <summary>
+            Lightweight wrapper for ESAPI objects.
+            Provides unified interface for binary/single-file scripts and standalone executables.
+            </summary>
+            <remarks>
+            This context can be initialized from a <see cref="T:VMS.TPS.Common.Model.API.ScriptContext"/> for binary plugins,
+            or manually constructed for standalone executables using <see cref="T:VMS.TPS.Common.Model.API.Patient"/> and <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/>.
+            </remarks>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Core.EsapiContext.pa">
+            <summary>
+            Gets or sets the patient context.
+            </summary>
+            <value>The <see cref="T:VMS.TPS.Common.Model.API.Patient"/> object from ESAPI.</value>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Core.EsapiContext.ps">
+            <summary>
+            Gets or sets the plan setup.
+            </summary>
+            <value>The <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/> object from ESAPI.</value>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Core.EsapiContext.ss">
+            <summary>
+            Gets or sets the structure set.
+            </summary>
+            <value>The <see cref="T:VMS.TPS.Common.Model.API.StructureSet"/> associated with the plan.</value>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Core.EsapiContext.im">
+            <summary>
+            Gets or sets the image.
+            </summary>
+            <value>The <see cref="T:VMS.TPS.Common.Model.API.Image"/> associated with the structure set.</value>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Core.EsapiContext.uo">
+            <summary>
+            Gets or sets the user origin vector in DICOM coordinates.
+            </summary>
+            <value>
+            The <see cref="T:VMS.TPS.Common.Model.Types.VVector"/> representing the user-defined origin point in millimeters.
+            This defines the (0,0,0) point for the TPS user coordinate system.
+            </value>
+            <remarks>
+            All coordinates are in DICOM coordinate system (mm).
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.EsapiContext.#ctor(VMS.TPS.Common.Model.API.ScriptContext)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Uclh.XRT.Esapi.Core.EsapiContext"/> class from a script context.
+            </summary>
+            <param name="scriptContext">The <see cref="T:VMS.TPS.Common.Model.API.ScriptContext"/> provided by ESAPI for binary/single-file scripts.</param>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="scriptContext"/> is null.</exception>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.EsapiContext.#ctor(VMS.TPS.Common.Model.API.Patient,VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Uclh.XRT.Esapi.Core.EsapiContext"/> class for standalone executables.
+            </summary>
+            <param name="patient">The <see cref="T:VMS.TPS.Common.Model.API.Patient"/> object.</param>
+            <param name="planSetup">The <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/> object.</param>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="patient"/> or <paramref name="planSetup"/> is null.
+            </exception>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.EsapiContext.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Uclh.XRT.Esapi.Core.EsapiContext"/> class with default values.
+            </summary>
+            <remarks>
+            Use this constructor when you need to populate properties manually.
+            All properties must be set before use.
+            </remarks>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Core.Logger">
+            <summary>
+            Provides simple logging for debugging and performance tracking.
+            </summary>
+            <remarks>
+            Logs variable states and timing information to timestamped text files.
+            Uses <see cref="T:System.Runtime.CompilerServices.CallerMemberNameAttribute"/> to automatically capture context.
+            Automatically includes script and library version information.
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.Logger.#ctor(System.String,System.String,System.Boolean)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Uclh.XRT.Esapi.Core.Logger"/> class.
+            </summary>
+            <param name="outputDirectory">Directory path where log files will be written.</param>
+            <param name="applicationName">Application name to include in log file header.</param>
+            <param name="enabled">If set to <c>true</c>, logging is enabled; otherwise, all logging is suppressed.</param>
+            <exception cref="T:System.ArgumentException">
+            Thrown when <paramref name="outputDirectory"/> or <paramref name="applicationName"/> is null or whitespace.
+            </exception>
+            <remarks>
+            Script assembly name, version, library assembly name, and library version are automatically detected from assembly metadata.
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.Logger.FromConfig(Uclh.XRT.Esapi.Core.IAppConfig,System.String,System.Boolean)">
+            <summary>
+            Creates a logger from an application configuration.
+            </summary>
+            <param name="config">The <see cref="T:Uclh.XRT.Esapi.Core.IAppConfig"/> containing the debug output path.</param>
+            <param name="applicationName">Application name to include in log file header.</param>
+            <param name="enabled">If set to <c>true</c>, logging is enabled.</param>
+            <returns>A new <see cref="T:Uclh.XRT.Esapi.Core.Logger"/> instance configured with the specified settings.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.Logger.GetCallingAssembly">
+            <summary>
+            Gets the calling assembly (the script that is using this library).
+            </summary>
+            <returns>
+            The calling assembly, or null if it cannot be determined.
+            </returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.Logger.LogMethodStart(System.String,System.String)">
+            <summary>
+            Logs the start of a method execution.
+            </summary>
+            <param name="methodName">The calling method name (auto-populated).</param>
+            <param name="sourceFilePath">The calling source file path (auto-populated).</param>
+            <remarks>
+            Call this at the beginning of methods you want to track.
+            The caller information is automatically captured using compiler attributes.
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.Logger.Log(System.String,System.Object,System.String,System.String)">
+            <summary>
+            Logs a variable name and its value with automatic context.
+            </summary>
+            <param name="variableName">The name of the variable being logged.</param>
+            <param name="value">The value to log (will be converted to string).</param>
+            <param name="methodName">The calling method name (auto-populated).</param>
+            <param name="sourceFilePath">The calling source file path (auto-populated).</param>
+            <remarks>
+            The class name and method name are automatically captured from the calling context.
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.Logger.LogSingle(System.Object,System.String,System.String)">
+            <summary>
+            Logs a single value with automatic context.
+            </summary>
+            <param name="value">The value to log (will be converted to string).</param>
+            <param name="methodName">The calling method name (auto-populated).</param>
+            <param name="sourceFilePath">The calling source file path (auto-populated).</param>
+            <remarks>
+            Use this when you want to log a message or value without a variable name prefix.
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.Logger.LogManual(System.String,System.String,System.String,System.Object)">
+            <summary>
+            Logs with explicit context information.
+            </summary>
+            <param name="className">The class name to display in the log.</param>
+            <param name="methodName">The method name to display in the log.</param>
+            <param name="variableName">The variable name being logged.</param>
+            <param name="value">The value to log.</param>
+            <remarks>
+            Use this for edge cases where automatic context capture isn't suitable.
+            Logged entries are prefixed with "_Manual" to distinguish them.
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.Logger.LogTiming(System.String,System.Double)">
+            <summary>
+            Stores timing information for a named operation.
+            </summary>
+            <param name="checkName">A descriptive name for the timed operation.</param>
+            <param name="elapsedMs">The elapsed time in milliseconds.</param>
+            <remarks>
+            Timing data is aggregated and written to the log file with percentage breakdowns.
+            Operations exceeding 1000ms are highlighted in the timing summary.
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.Logger.WriteToFile(System.String)">
+            <summary>
+            Writes all logged entries and timing summary to a timestamped file.
+            </summary>
+            <param name="patientId">Patient ID to include in the filename and header.</param>
+            <exception cref="T:System.IO.IOException">Thrown when the log file cannot be written.</exception>
+            <remarks>
+            <para>The output directory is created if it doesn't exist.</para>
+            <para>File naming format: {PatientId}_{yyyyMMdd_HHmmss}_debug.txt</para>
+            <para>No file is written if logging is disabled or no entries have been logged.</para>
+            </remarks>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Core.PeakDetection">
+            <summary>
+            Class containing methods for detecting local peaks in a series of values.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.PeakDetection.GetPeakIndices(System.Double[],System.Int32,System.Double,System.Int32)">
+            <summary>
+            Finds the indices of an double value array where there are local peaks.
+            </summary>
+            <param name="data">Array containing series of values.</param>
+            <param name="searchRange">Sensitivity parameter controlling the number of array elements to consider either side of test element when looking for local peak.</param>
+            <param name="minValue">Minimum value to consider element a peak.</param>
+            <param name="numPeaksCutoff">Cut-off parameter that stops searching for peaks once number has been met.</param>
+            <returns>Integer list of the indicies of the array elements where peaks are detected.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.PeakDetection.LocalPeak(System.Double[],System.Int32,System.Int32)">
+            <summary>
+            Determines where element value at specific index is larger (more positive) than those within search range. 
+            </summary>
+            <param name="data">Array containing series of values.</param>
+            <param name="index">Integer index representation.</param>
+            <param name="searchRange">Integer number of elements to consider either side of index.</param>
+            <returns>True if local peak, False if not.</returns>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Core.PlanInfo">
+            <summary>
+            DEPRICATED - kept for compatibility but replaced by EsapiContext + analyzer utilities.
+            Extended ESAPI context with commonly-used derived properties and legacy support.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.PlanInfo.StartResults(System.String,System.String,System.String,System.String)">
+            <summary>
+            Generates instance of ResultsOutput for storing test results.
+            Takes patient ID to append to filename.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.PlanInfo.PopulateFields(VMS.TPS.Common.Model.API.ScriptContext)">
+            <summary>
+            Legacy method - kept for backward compatibility.
+            Prefer using EsapiContext constructor or setting properties directly.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.PlanInfo.PopulateFields(VMS.TPS.Common.Model.API.PlanSetup,VMS.TPS.Common.Model.API.Patient)">
+            <summary>
+            Legacy method - kept for backward compatibility.
+            Prefer using EsapiContext constructor or setting properties directly.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.PlanInfo.GetGantryCouchGeometry(System.Double)">
+            <summary>
+            Calculate gantry-couch collision geometry.
+            Requires scannerCouchInfo to be populated and gantry radius constant.
+            </summary>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Core.ResultsOutput">
+            <summary>
+            Generates HTML-based test result reports from plan validation checks.
+            </summary>
+            <remarks>
+            Collects test results with PASS/CHECK/FAIL statuses and outputs a collapsible HTML report.
+            Includes checksum for regression testing.
+            </remarks>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Core.ResultsOutput.FilePath">
+            <summary>
+            Gets or sets the output file path for the generated HTML report.
+            </summary>
+            <value>The full path where the HTML file will be written.</value>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.ResultsOutput.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Uclh.XRT.Esapi.Core.ResultsOutput"/> class.
+            </summary>
+            <param name="templateHtmlPath">Path to the HTML template file containing the report structure.</param>
+            <param name="templateJsPath">Path to the JavaScript template file for interactive elements.</param>
+            <param name="applicationName">
+            Optional application name for the report header. If null, uses the executing assembly name.
+            </param>
+            <exception cref="T:System.ArgumentException">
+            Thrown when <paramref name="templateHtmlPath"/> or <paramref name="templateJsPath"/> is null or whitespace.
+            </exception>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.ResultsOutput.AddResult(System.String,System.String,System.String,System.String)">
+            <summary>
+            Adds a test result to the output collection.
+            </summary>
+            <param name="id">Unique identifier for the test. Must be unique across all results.</param>
+            <param name="status">Test status (typically "PASS", "CHECK", or "FAIL").</param>
+            <param name="test">Human-readable test name displayed in the report.</param>
+            <param name="message">Detailed test message. HTML formatting is supported.</param>
+            <exception cref="T:System.InvalidOperationException">
+            Thrown when a result with the same <paramref name="id"/> has already been added.
+            </exception>
+            <remarks>
+            The message is automatically appended with an HTML line break for formatting.
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.ResultsOutput.CalculateMD5Hash">
+            <summary>
+            Calculates an MD5 hash of all test results for verification.
+            </summary>
+            <returns>A hexadecimal string representation of the MD5 hash.</returns>
+            <remarks>
+            The hash is computed from the concatenation of all result statuses, test names, and messages.
+            Can be used for regression testing.
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.ResultsOutput.OutputResults(Uclh.XRT.Esapi.Core.EsapiContext)">
+            <summary>
+            Generates an HTML results file and opens it in the default browser.
+            </summary>
+            <param name="context">The <see cref="T:Uclh.XRT.Esapi.Core.EsapiContext"/> containing patient and plan information for the report header.</param>
+            <exception cref="T:System.IO.FileNotFoundException">
+            Thrown when either the HTML or JavaScript template file cannot be found.
+            </exception>
+            <exception cref="T:System.IO.IOException">Thrown when the output file cannot be written.</exception>
+            <remarks>
+            <para>Results are categorized into FAIL, CHECK, and PASS sections with collapsible UI.</para>
+            <para>The output directory is created automatically if it doesn't exist.</para>
+            <para>The file is opened using <see cref="M:System.Diagnostics.Process.Start(System.String)"/> after generation.</para>
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.ResultsOutput.GetResults">
+            <summary>
+            Retrieves all results as a list of <see cref="T:AutoRegression.Contracts.CheckResult"/> objects.
+            </summary>
+            <returns>
+            A list of <see cref="T:AutoRegression.Contracts.CheckResult"/> objects ordered by check ID,
+            with normalized messages suitable for regression testing.
+            </returns>
+            <remarks>
+            Messages are normalized by removing HTML entities and tags using <see cref="M:Uclh.XRT.Esapi.Core.ResultsOutput.NormalizeMessage(System.String)"/>.
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.ResultsOutput.ToSnapshot(Uclh.XRT.Esapi.Core.PlanInfo)">
+            <summary>
+            Converts the results to a <see cref="T:AutoRegression.Contracts.TestItemSnapshot"/> for regression testing.
+            </summary>
+            <param name="planInfo">The <see cref="T:Uclh.XRT.Esapi.Core.PlanInfo"/> containing plan identification information.</param>
+            <returns>
+            A <see cref="T:AutoRegression.Contracts.TestItemSnapshot"/> containing aggregated pass/check/fail counts
+            and individual check results.
+            </returns>
+            <remarks>
+            The item key is built from Course ID, Plan ID, and Structure Set ID.
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.ResultsOutput.NormalizeMessage(System.String)">
+            <summary>
+            Normalizes HTML-formatted messages to plain text.
+            </summary>
+            <param name="raw">The raw message containing HTML entities and tags.</param>
+            <returns>
+            A plain text string with HTML entities decoded and tags removed.
+            Whitespace is normalized to single spaces.
+            </returns>
+            <remarks>
+            <para>Decodes common HTML entities: &amp;nbsp;, &amp;emsp;, &amp;ensp;, &amp;amp;, &amp;lt;, &amp;gt;, &amp;quot;</para>
+            <para>Removes all HTML tags using regex pattern matching.</para>
+            <para>Collapses multiple whitespace characters to a single space.</para>
+            </remarks>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Core.ScannerCouchInfo">
+            <summary>
+            Detects CT scanner type and physical couch from image HU profiles.
+            Use this to determine which scanner was used and couch top type.
+            For couch STRUCTURE detection, use CouchAnalyzer.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.ScannerCouchInfo.PopulateScannerInfo(Uclh.XRT.Esapi.Core.PlanInfo)">
+            <summary>
+            Populates the Scanner and Couch information of the PlanInfo reference passed as reference.
+            </summary>
+            <param name="plan">PlanInfo reference passed as reference.</param>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.ScannerCouchInfo.DetermineScanner(VMS.TPS.Common.Model.API.Image)">
+            <summary>
+            Determines the CT scanner used for the image in the treatment plan.
+            Uses the image level to determine if PETCT scanner (level > 10,000) or Photon/PBT scanner (level under 10,000).
+            Separate method used to determine reference position for each scanner type and determine Photon/PBT scanner.
+            </summary>
+            <param name="im">Image reference passed as reference.</param>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.ScannerCouchInfo.DetermineCouch(VMS.TPS.Common.Model.API.Image)">
+            <summary>
+            Determines the Couch used when scanning the patient.
+            </summary>
+            <param name="im">Image reference passed as reference.</param>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.ScannerCouchInfo.GetPhotonPbtReferencePositions(VMS.TPS.Common.Model.API.Image)">
+            <summary>
+            Determines the reference positon for the Photon and PBT CT scanners.
+            The reference position for these scanners is the high density couch bar.
+            The sup-inf level of the user origin is generally used as the reference z
+            position, however, it may differ when bar cannot be found at that level.
+            The high density couch bar is located by plotting horizontal HU profiles at various Ant/Post levels. This process is optimized
+            by taking the lowest point of the body structure along the midline of the image (should be at level of couch) and plotting profiles
+            from there and down. If the profile contains HU values above 1400, then it is assumed that is caused by the high density couch bar
+            and the reference location is found.
+            </summary>
+            <param name="im">Image reference passed as reference.</param>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.ScannerCouchInfo.GetPetReferencePositions(VMS.TPS.Common.Model.API.Image)">
+            <summary>
+            Determines the PETCT reference position. The reference position is taken as the
+            z coordinate of the user origin, the midpoint laterally of the image and the
+            level of the curved lower couch bar in the y direction.
+            </summary>
+            <param name="im">Image reference passed by value.</param>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.ScannerCouchInfo.ScannerByBar(VMS.TPS.Common.Model.API.Image,VMS.TPS.Common.Model.Types.VVector)">
+            <summary>
+            Determines whether the scanner is Photon or PBT based on reference bar location.
+            </summary>
+            <param name="im">Image reference passed by value.</param>
+            <param name="bar">VVector representation of the high desnity couch bar.</param>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.ScannerCouchInfo.PortraitBoardSearchPlane(VMS.TPS.Common.Model.API.Image)">
+            <summary>
+            Determines the search limits in the y-direction for detecting the portrait board 
+            based on the scanner type and the reference y-coordinate.
+            </summary>
+            <param name="im">Image reference passed by value.</param>
+            <returns>Int[] {lower serach level, upper search level}</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.ScannerCouchInfo.PortraitBoardSearchPlane(VMS.TPS.Common.Model.API.Image,System.Double)">
+            <summary>
+            Overload method that takes an offset for calculating search limits a known distance above standard plane.
+            Based on Scanner used and reference position, calculate the lower and upper y-planes for searching for the portrait board.
+            </summary>
+            <param name="im">Image reference passed by value.</param>
+            <returns>Int[] {lower serach level, upper search level}</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.ScannerCouchInfo.PortraitBoardSupInfSearch(VMS.TPS.Common.Model.API.Image)">
+            <summary>
+            This method is designed to identify whether a Portrait Board is present in a CT scan by searching for specific patterns in the image's 
+            Hounsfield Unit (HU) profiles along the superior-inferior (z-axis) direction at specific y-planes. Looks at the distances between peaks
+            in the Sup_Inf direction corresponding with known distances on Portrait board, and if multiple slices contain multiple peaks within the
+            expected ranges, then identifies as portrait board.
+            </summary>
+            <param name="im">Image reference.</param>
+            <returns>True if portrait board identified, false if not.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.ScannerCouchInfo.PortraitBoardLeftRightSearch(VMS.TPS.Common.Model.API.Image)">
+            <summary>
+            Searches for the presence of a portrait board based on HU profile analysis
+            along the left-right (x) axis in the given y-planes and z-range.
+            </summary>
+            <param name="im">Image reference.</param>
+            <param name="ylimits">An array of two integers defining the y-plane search limits.</param>
+            <returns>True if the portrait board pattern is found; otherwise, false.</returns>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Core.XmlConfigLoader">
+            <summary>
+            Provides generic XML configuration loading and saving utilities.
+            </summary>
+            <remarks>
+            Supports deserialization and serialization of strongly-typed config classes
+            using <see cref="T:System.Xml.Serialization.XmlSerializer"/>. Type T must be serializable with public properties.
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.XmlConfigLoader.Load``1(System.String)">
+            <summary>
+            Loads and deserializes an XML configuration file to a strongly-typed object.
+            </summary>
+            <typeparam name="T">The configuration class type. Must be XML serializable.</typeparam>
+            <param name="filePath">Full path to the XML configuration file.</param>
+            <returns>A deserialized instance of type <typeparamref name="T"/>.</returns>
+            <exception cref="T:System.IO.FileNotFoundException">Thrown when the configuration file does not exist at <paramref name="filePath"/>.</exception>
+            <exception cref="T:System.InvalidOperationException">Thrown when XML is malformed or doesn't match the expected schema for type <typeparamref name="T"/>.</exception>
+            <remarks>
+            The type <typeparamref name="T"/> must have a parameterless constructor and use XML serialization attributes if needed.
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.XmlConfigLoader.LoadFromEnvironment``1(System.String,System.String)">
+            <summary>
+            Loads configuration from a path specified in an environment variable, with fallback support.
+            </summary>
+            <typeparam name="T">The configuration class type. Must be XML serializable.</typeparam>
+            <param name="environmentVariable">The name of the environment variable containing the configuration file path.</param>
+            <param name="defaultPath">The fallback path to use if the environment variable is not set or is empty.</param>
+            <returns>A deserialized instance of type <typeparamref name="T"/>.</returns>
+            <exception cref="T:System.IO.FileNotFoundException">Thrown when the configuration file does not exist at the resolved path.</exception>
+            <exception cref="T:System.InvalidOperationException">Thrown when XML deserialization fails.</exception>
+            <remarks>
+            This is useful for deployment scenarios where configuration paths may vary between environments.
+            The environment variable takes precedence over the default path.
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.XmlConfigLoader.Save``1(``0,System.String,System.Boolean)">
+            <summary>
+            Saves a configuration object to an XML file.
+            </summary>
+            <typeparam name="T">The configuration class type. Must be XML serializable.</typeparam>
+            <param name="config">The configuration object to serialize.</param>
+            <param name="filePath">The output file path where XML will be written.</param>
+            <param name="indent">If set to <c>true</c>, the XML output will be indented for readability (default: true).</param>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="config"/> is null.</exception>
+            <exception cref="T:System.IO.IOException">Thrown when the file cannot be written.</exception>
+            <remarks>
+            <para>The output directory is created automatically if it doesn't exist.</para>
+            <para>Output encoding is UTF-8 with XML declaration included.</para>
+            <para>Indentation uses 2 spaces per level when <paramref name="indent"/> is true.</para>
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Core.XmlConfigLoader.TryValidate``1(System.String,System.String@)">
+            <summary>
+            Validates that a configuration file exists and can be successfully deserialized.
+            </summary>
+            <typeparam name="T">The configuration class type. Must be XML serializable.</typeparam>
+            <param name="filePath">The path to the XML configuration file to validate.</param>
+            <param name="error">
+            When this method returns, contains the error message if validation failed; otherwise, null.
+            </param>
+            <returns>
+            <c>true</c> if the file exists and can be deserialized to type <typeparamref name="T"/>; otherwise, <c>false</c>.
+            </returns>
+            <remarks>
+            This method catches all exceptions and returns them via the <paramref name="error"/> parameter,
+            making it suitable for validation scenarios where exceptions shouldn't propagate.
+            </remarks>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Core.IAppConfig">
+            <summary>
+            Defines standard configuration paths for ESAPI script applications.
+            </summary>
+            <remarks>
+            Implement this interface in application-specific configuration classes
+            to provide consistent path management across different scripts.
+            </remarks>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Core.IAppConfig.DebugOutputPath">
+            <summary>
+            Gets the directory path for debug and log output files.
+            </summary>
+            <value>A full directory path where debug logs should be written.</value>
+            <remarks>
+            Used by <see cref="T:Uclh.XRT.Esapi.Core.Logger"/> to determine where to write debug output.
+            </remarks>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Core.IAppConfig.TempResultsPath">
+            <summary>
+            Gets the directory path for temporary results output.
+            </summary>
+            <value>A full directory path where temporary results (e.g., HTML reports) should be written.</value>
+            <remarks>
+            Used by <see cref="T:Uclh.XRT.Esapi.Core.ResultsOutput"/> for HTML report generation.
+            </remarks>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.IO.DirectoryUtilities">
+            <summary>
+            Class containing methods for checking directory existence and read/write permissions.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.IO.DirectoryUtilities.DirectoryExists(System.String)">
+            <summary>
+            Takes a string representation of a directory path and returns true if the directory exists.
+            </summary>
+            <param name="path">The directory path to check.</param>
+            <returns>True if the directory exists.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.IO.DirectoryUtilities.CanReadDirectory(System.String)">
+            <summary>
+            Checks if the directory can be read.
+            </summary>
+            <param name="path">The directory path to check.</param>
+            <returns>True if it can be read. False if not.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.IO.DirectoryUtilities.CanWriteDirectory(System.String)">
+            <summary>
+            Checks if possible to write to a directory.
+            </summary>
+            <param name="path">The directory path to check.</param>
+            <returns>True if write possible.</returns>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.IO.Inputs">
+            <summary>
+            Class containing methods for getting user input, e.g. via input box.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.IO.Inputs.TryGetDoubleFromInputBox(System.String,System.String,System.Double@)">
+            <summary>
+            Tries to get a double value from an input box.
+            </summary>
+            <param name="prompt">The message to display in the input box.</param>
+            <param name="title">The title of the input box.</param>
+            <param name="value">The double value entered by the user.</param>
+            <returns>True if the user entered a valid double; otherwise, false.</returns>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Reporting.Internal.BulletListSection">
+            <summary>
+            Represents a bullet list section in a report.
+            </summary>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.Internal.BulletListSection.Items">
+            <summary>
+            Gets or sets the list of bullet points.
+            </summary>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.Internal.CollapsibleSection.Title">
+            <summary>
+            Gets or sets the section title (always visible).
+            </summary>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.Internal.CollapsibleSection.ContentSections">
+            <summary>
+            Gets or sets the nested content sections (shown/hidden by toggle).
+            </summary>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Reporting.Internal.DataTableSection">
+            <summary>
+            Represents a data table section in a report.
+            </summary>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.Internal.DataTableSection.Title">
+            <summary>
+            Gets or sets the optional table title.
+            </summary>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.Internal.DataTableSection.Headers">
+            <summary>
+            Gets or sets the column headers.
+            </summary>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.Internal.DataTableSection.Rows">
+            <summary>
+            Gets or sets the table rows (each row is an array of cell values).
+            </summary>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Reporting.Internal.EmbeddedResources">
+            <summary>
+            Provides embedded CSS templates and logo resources for HTML report generation.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.Internal.EmbeddedResources.GetUclhLogoBase64">
+            <summary>
+            Gets the UCLH vertical logo as a base64-encoded data URI.
+            </summary>
+            <returns>A data URI string for embedding in HTML img src attributes.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.Internal.EmbeddedResources.GetNhsUclhLogoBase64">
+            <summary>
+            Gets the NHS/UCLH horizontal logo as a base64-encoded data URI.
+            </summary>
+            <returns>A data URI string for embedding in HTML img src attributes.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.Internal.EmbeddedResources.GetEmbeddedImageAsBase64(System.String,System.String)">
+            <summary>
+            Loads an embedded image resource and converts it to a base64 data URI.
+            </summary>
+            <param name="fileName">The embedded resource file name.</param>
+            <param name="mimeType">The MIME type (e.g., "image/png", "image/jpeg").</param>
+            <returns>A data URI string.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.Internal.EmbeddedResources.GetStandardCss">
+            <summary>
+            Gets the CSS stylesheet for the Standard report style.
+            </summary>
+            <returns>CSS content as a string.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.Internal.EmbeddedResources.GetCompactCss">
+            <summary>
+            Gets the CSS stylesheet for the Compact report style.
+            </summary>
+            <returns>CSS content as a string.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.Internal.EmbeddedResources.GetJavaScript">
+            <summary>
+            Gets the JavaScript code for interactive features (collapsible sections).
+            </summary>
+            <returns>JavaScript content as a string.</returns>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Reporting.Internal.HeadingSection">
+            <summary>
+            Represents a heading section in a report.
+            </summary>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.Internal.HeadingSection.Text">
+            <summary>
+            Gets or sets the heading text.
+            </summary>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.Internal.HeadingSection.Level">
+            <summary>
+            Gets or sets the heading level (1-6, corresponding to H1-H6 HTML tags).
+            </summary>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Reporting.Internal.HtmlHelper">
+            <summary>
+            Provides HTML formatting and escaping utilities for report generation.
+            </summary>
+        </member>
+        <member name="F:Uclh.XRT.Esapi.Reporting.Internal.HtmlHelper.EOL">
+            <summary>
+            Common HTML formatting: end of line with spacing.
+            </summary>
+        </member>
+        <member name="F:Uclh.XRT.Esapi.Reporting.Internal.HtmlHelper.SOL">
+            <summary>
+            Common HTML formatting: start of line spacing.
+            </summary>
+        </member>
+        <member name="F:Uclh.XRT.Esapi.Reporting.Internal.HtmlHelper.NBSP">
+            <summary>
+            Common HTML formatting: non-breaking space.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.Internal.HtmlHelper.EscapeHtml(System.String)">
+            <summary>
+            Escapes special HTML characters in text to prevent injection and rendering issues.
+            </summary>
+            <param name="text">The text to escape.</param>
+            <returns>
+            The HTML-escaped text, or an empty string if <paramref name="text"/> is null.
+            </returns>
+            <remarks>
+            Escapes the following characters:
+            <list type="bullet">
+            <item><description>&amp; → &amp;amp;</description></item>
+            <item><description>&lt; → &amp;lt;</description></item>
+            <item><description>&gt; → &amp;gt;</description></item>
+            <item><description>&quot; → &amp;quot;</description></item>
+            <item><description>' → &amp;#39;</description></item>
+            </list>
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.Internal.HtmlHelper.ValidateHeadingLevel(System.Int32)">
+            <summary>
+            Validates that a heading level is between 1 and 6 (inclusive).
+            </summary>
+            <param name="level">The heading level to validate.</param>
+            <returns>The validated level.</returns>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            Thrown when <paramref name="level"/> is less than 1 or greater than 6.
+            </exception>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Reporting.Internal.HtmlRenderer">
+            <summary>
+            Renders a ReportDocument to HTML format.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.Internal.HtmlRenderer.RenderHtml(Uclh.XRT.Esapi.Reporting.ReportDocument,Uclh.XRT.Esapi.Reporting.ReportStyle)">
+            <summary>
+            Renders a complete HTML document from a ReportDocument.
+            </summary>
+            <param name="document">The report document to render.</param>
+            <param name="style">The visual style to apply.</param>
+            <returns>A complete HTML document as a string.</returns>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Reporting.Internal.KeyValueTableSection">
+            <summary>
+            Represents a key-value table section in a report.
+            </summary>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.Internal.KeyValueTableSection.Data">
+            <summary>
+            Gets or sets the list of key-value pairs.
+            </summary>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Reporting.Internal.NoteSection">
+            <summary>
+            Represents an informational or warning note section in a report.
+            </summary>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.Internal.NoteSection.Text">
+            <summary>
+            Gets or sets the note text.
+            </summary>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.Internal.NoteSection.Type">
+            <summary>
+            Gets or sets the note type (Info or Warning).
+            </summary>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Reporting.Internal.ParagraphSection">
+            <summary>
+            Represents a paragraph section in a report.
+            </summary>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.Internal.ParagraphSection.Text">
+            <summary>
+            Gets or sets the paragraph text.
+            </summary>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Reporting.Internal.RawHtmlSection">
+            <summary>
+            Represents a raw HTML section in a report.
+            </summary>
+            <remarks>
+            This section is rendered without HTML escaping and should only be used
+            for trusted content.
+            </remarks>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.Internal.RawHtmlSection.Html">
+            <summary>
+            Gets or sets the raw HTML content.
+            </summary>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Reporting.Internal.ReportSection">
+            <summary>
+            Abstract base class for all report content sections.
+            </summary>
+            <remarks>
+            This class is internal and used by <see cref="T:Uclh.XRT.Esapi.Reporting.ReportDocument"/> to store
+            different types of content that will be rendered to HTML.
+            </remarks>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.Internal.ReportSection.SectionType">
+            <summary>
+            When overridden in a derived class, gets the type name of this section.
+            </summary>
+            <value>A string describing the section type (e.g., "Heading", "Paragraph", "Table").</value>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Reporting.NoteType">
+            <summary>
+            Defines the type of informational note to display in a report.
+            </summary>
+        </member>
+        <member name="F:Uclh.XRT.Esapi.Reporting.NoteType.INFO">
+            <summary>
+            Informational note with neutral styling (typically blue/grey).
+            </summary>
+        </member>
+        <member name="F:Uclh.XRT.Esapi.Reporting.NoteType.WARNING">
+            <summary>
+            Warning note with attention-grabbing styling (typically yellow/orange).
+            </summary>
+        </member>
+        <member name="F:Uclh.XRT.Esapi.Reporting.NoteType.ERROR">
+            <summary>
+            Error note with critical styling (typically red).
+            </summary>
+        </member>
+        <member name="F:Uclh.XRT.Esapi.Reporting.NoteType.PASS">
+            <summary>
+            Pass note with positive styling (typically green).
+            </summary>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Reporting.ReportContext">
+            <summary>
+            Contains optional clinical context information for a report.
+            </summary>
+            <remarks>
+            All properties are optional to support different types of ESAPI scripts
+            (plan-based, image-based, structure-set-based, or patient-only scripts).
+            </remarks>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.ReportContext.PatientId">
+            <summary>
+            Gets or sets the patient identifier.
+            </summary>
+            <value>The patient ID, or null if not applicable.</value>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.ReportContext.CourseId">
+            <summary>
+            Gets or sets the course identifier.
+            </summary>
+            <value>The course ID, or null if not applicable.</value>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.ReportContext.PlanId">
+            <summary>
+            Gets or sets the plan identifier.
+            </summary>
+            <value>The plan ID, or null if not applicable.</value>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.ReportContext.StructureSetId">
+            <summary>
+            Gets or sets the structure set identifier.
+            </summary>
+            <value>The structure set ID, or null if not applicable.</value>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.ReportContext.ImageSeriesId">
+            <summary>
+            Gets or sets the image series identifier.
+            </summary>
+            <value>The image series ID, or null if not applicable.</value>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.ReportContext.StudyId">
+            <summary>
+            Gets or sets the study identifier.
+            </summary>
+            <value>The study ID, or null if not applicable.</value>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.ReportContext.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Uclh.XRT.Esapi.Reporting.ReportContext"/> class
+            with all properties set to null.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.ReportContext.FromPlanSetup(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Creates a <see cref="T:Uclh.XRT.Esapi.Reporting.ReportContext"/> from a ESAPI <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/> object.
+            </summary>
+            <param name="planSetup">The plan setup to extract context from.</param>
+            <returns>
+            A new <see cref="T:Uclh.XRT.Esapi.Reporting.ReportContext"/> with Patient, Course, Plan, and StructureSet IDs populated.
+            </returns>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="planSetup"/> is null.
+            </exception>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.ReportContext.FromStructureSet(VMS.TPS.Common.Model.API.StructureSet)">
+            <summary>
+            Creates a <see cref="T:Uclh.XRT.Esapi.Reporting.ReportContext"/> from a ESAPI <see cref="T:VMS.TPS.Common.Model.API.StructureSet"/> object.
+            </summary>
+            <param name="structureSet">The structure set to extract context from.</param>
+            <returns>
+            A new <see cref="T:Uclh.XRT.Esapi.Reporting.ReportContext"/> with Patient, StructureSet, Image, and Study IDs populated.
+            </returns>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="structureSet"/> is null.
+            </exception>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.ReportContext.FromImage(VMS.TPS.Common.Model.API.Patient,VMS.TPS.Common.Model.API.Image)">
+            <summary>
+            Creates a <see cref="T:Uclh.XRT.Esapi.Reporting.ReportContext"/> from a ESAPI <see cref="T:VMS.TPS.Common.Model.API.Image"/> object.
+            </summary>
+            <param name="image">The image to extract context from.</param>
+            <returns>
+            A new <see cref="T:Uclh.XRT.Esapi.Reporting.ReportContext"/> with Patient, Image Series, and Study IDs populated.
+            </returns>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="image"/> is null.
+            </exception>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.ReportContext.FromPatient(VMS.TPS.Common.Model.API.Patient)">
+            <summary>
+            Creates a <see cref="T:Uclh.XRT.Esapi.Reporting.ReportContext"/> from a ESAPI <see cref="T:VMS.TPS.Common.Model.API.Patient"/> object.
+            </summary>
+            <param name="patient">The patient to extract context from.</param>
+            <returns>
+            A new <see cref="T:Uclh.XRT.Esapi.Reporting.ReportContext"/> with only Patient ID populated.
+            </returns>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="patient"/> is null.
+            </exception>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Reporting.ReportDocument">
+            <summary>
+            Represents a generic HTML report document for ESAPI scripts.
+            </summary>
+            <remarks>
+            <para>
+            <see cref="T:Uclh.XRT.Esapi.Reporting.ReportDocument"/> provides a reusable, fluent API for building
+            HTML reports from any ESAPI script. It supports automatic metadata population,
+            optional clinical context, and various content types including headings, paragraphs,
+            lists, tables, and collapsible sections.
+            </para>
+            <para>
+            Generated HTML is self-contained with embedded CSS and UCLH branding,
+            compatible with Internet Explorer 11 for use in clinical Citrix environments.
+            </para>
+            </remarks>
+            <example>
+            <code>
+            var report = new ReportDocument("QA Summary Report");
+            report.Metadata = new ReportMetadata(); // Auto-populates
+            report.Context = ReportContext.FromPlanSetup(planSetup);
+            
+            report.AddHeading("Results")
+                  .AddParagraph("All checks passed successfully.")
+                  .SaveToFile(@"C:\Reports\qa_summary.html");
+            </code>
+            </example>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.ReportDocument.Title">
+            <summary>
+            Gets the report title displayed in the header.
+            </summary>
+            <value>The main title of the report.</value>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.ReportDocument.Metadata">
+            <summary>
+            Gets or sets the metadata for this report.
+            </summary>
+            <value>
+            Metadata including script name, version, user, and timestamp.
+            If not set explicitly, a default instance with auto-populated values is used.
+            </value>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.ReportDocument.Context">
+            <summary>
+            Gets or sets the clinical context for this report.
+            </summary>
+            <value>
+            Optional context such as Patient ID, Plan ID, etc.
+            Can be null for scripts that don't operate on patient data.
+            </value>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.ReportDocument.#ctor(System.String)">
+            <summary>
+            Initializes a new instance of the <see cref="T:Uclh.XRT.Esapi.Reporting.ReportDocument"/> class.
+            </summary>
+            <param name="title">The main title of the report.</param>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="title"/> is null.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            Thrown when <paramref name="title"/> is empty or whitespace.
+            </exception>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.ReportDocument.SectionCount">
+            <summary>
+            Gets the number of content sections in this report.
+            </summary>
+            <value>The count of sections added to the report.</value>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.ReportDocument.AddHeading(System.String,System.Int32)">
+            <summary>
+            Adds a heading to the report.
+            </summary>
+            <param name="text">The heading text. Will be HTML-escaped.</param>
+            <param name="level">
+            The heading level (1-6, corresponding to H1-H6 tags). Default is 1.
+            </param>
+            <returns>This <see cref="T:Uclh.XRT.Esapi.Reporting.ReportDocument"/> instance for method chaining.</returns>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="text"/> is null.
+            </exception>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+            Thrown when <paramref name="level"/> is less than 1 or greater than 6.
+            </exception>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.ReportDocument.AddParagraph(System.String)">
+            <summary>
+            Adds a paragraph to the report.
+            </summary>
+            <param name="text">The paragraph text. Will be HTML-escaped.</param>
+            <returns>This <see cref="T:Uclh.XRT.Esapi.Reporting.ReportDocument"/> instance for method chaining.</returns>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="text"/> is null.
+            </exception>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.ReportDocument.AddBulletList(System.Collections.Generic.IEnumerable{System.String})">
+            <summary>
+            Adds a bulleted list to the report.
+            </summary>
+            <param name="items">The list items. Each item will be HTML-escaped.</param>
+            <returns>This <see cref="T:Uclh.XRT.Esapi.Reporting.ReportDocument"/> instance for method chaining.</returns>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="items"/> is null.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            Thrown when <paramref name="items"/> is empty.
+            </exception>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.ReportDocument.AddKeyValueTable(System.Collections.Generic.Dictionary{System.String,System.String},System.String)">
+            <summary>
+            Adds a key-value table to the report.
+            </summary>
+            <param name="data">
+            The key-value pairs to display. Keys and values will be HTML-escaped.
+            </param>
+            <param name="tableTitle">
+            Optional title displayed above the table. Will be HTML-escaped.
+            </param>
+            <returns>This <see cref="T:Uclh.XRT.Esapi.Reporting.ReportDocument"/> instance for method chaining.</returns>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="data"/> is null.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            Thrown when <paramref name="data"/> is empty.
+            </exception>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.ReportDocument.AddDataTable(System.String[],System.Collections.Generic.List{System.String[]},System.String)">
+            <summary>
+            Adds a data table to the report.
+            </summary>
+            <param name="headers">The column headers. Each header will be HTML-escaped.</param>
+            <param name="rows">
+            The table rows, where each row is an array of cell values.
+            Cell values will be HTML-escaped.
+            </param>
+            <param name="tableTitle">
+            Optional title displayed above the table. Will be HTML-escaped.
+            </param>
+            <returns>This <see cref="T:Uclh.XRT.Esapi.Reporting.ReportDocument"/> instance for method chaining.</returns>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="headers"/> or <paramref name="rows"/> is null.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            Thrown when <paramref name="headers"/> is empty, <paramref name="rows"/> is empty,
+            or any row has a different number of columns than the headers.
+            </exception>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.ReportDocument.AddCollapsibleSection(System.String,System.Action{Uclh.XRT.Esapi.Reporting.ReportDocument})">
+            <summary>
+            Adds a collapsible section to the report.
+            </summary>
+            <param name="title">
+            The section title (always visible). Will be HTML-escaped.
+            </param>
+            <param name="contentBuilder">
+            A callback that receives a nested <see cref="T:Uclh.XRT.Esapi.Reporting.ReportDocument"/> instance
+            for adding content to the collapsible section.
+            </param>
+            <returns>This <see cref="T:Uclh.XRT.Esapi.Reporting.ReportDocument"/> instance for method chaining.</returns>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="title"/> or <paramref name="contentBuilder"/> is null.
+            </exception>
+            <remarks>
+            <para>
+            The collapsible section will be initially collapsed. Users can click the title
+            to expand/collapse the content.
+            </para>
+            <para>
+            Example:
+            <code>
+            report.AddCollapsibleSection("Detailed Results", nested =>
+            {
+                nested.AddParagraph("This content is hidden by default.");
+                nested.AddDataTable(headers, rows);
+            });
+            </code>
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.ReportDocument.AddNote(System.String,Uclh.XRT.Esapi.Reporting.NoteType)">
+            <summary>
+            Adds an informational or warning note to the report.
+            </summary>
+            <param name="text">The note text. Will be HTML-escaped.</param>
+            <param name="type">The note type (Info or Warning). Default is Info.</param>
+            <returns>This <see cref="T:Uclh.XRT.Esapi.Reporting.ReportDocument"/> instance for method chaining.</returns>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="text"/> is null.
+            </exception>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.ReportDocument.AddRawHtml(System.String)">
+            <summary>
+            Adds raw HTML to the report without escaping.
+            </summary>
+            <param name="html">The raw HTML content.</param>
+            <returns>This <see cref="T:Uclh.XRT.Esapi.Reporting.ReportDocument"/> instance for method chaining.</returns>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="html"/> is null.
+            </exception>
+            <remarks>
+            <para>
+            <b>WARNING:</b> This method does not escape the HTML content.
+            Only use this with trusted content. Untrusted content may cause rendering
+            issues or security vulnerabilities.
+            </para>
+            <para>
+            This method is intended for advanced scenarios where you need to embed
+            custom HTML elements not supported by the standard content methods.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.ReportDocument.GenerateHtml(Uclh.XRT.Esapi.Reporting.ReportStyle)">
+            <summary>
+            Generates a complete HTML document from this report.
+            </summary>
+            <param name="style">
+            The visual style to apply (Standard or Compact). Default is Standard.
+            </param>
+            <returns>
+            A complete HTML document as a string, with embedded CSS and JavaScript.
+            </returns>
+            <remarks>
+            The generated HTML is self-contained and can be saved as a standalone .html file.
+            It is compatible with Internet Explorer 11 and includes print-friendly styling.
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.ReportDocument.SaveToFile(System.String,Uclh.XRT.Esapi.Reporting.ReportStyle)">
+            <summary>
+            Generates and saves the report as an HTML file.
+            </summary>
+            <param name="filePath">
+            The full path where the HTML file should be saved (including .html extension).
+            </param>
+            <param name="style">
+            The visual style to apply (Standard or Compact). Default is Standard.
+            </param>
+            <exception cref="T:System.ArgumentNullException">
+            Thrown when <paramref name="filePath"/> is null.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+            Thrown when <paramref name="filePath"/> is empty or whitespace.
+            </exception>
+            <exception cref="T:System.IO.IOException">
+            Thrown when the file cannot be written (e.g., permission denied, path not found).
+            </exception>
+            <remarks>
+            <para>
+            If a file already exists at <paramref name="filePath"/>, it will be overwritten.
+            </para>
+            <para>
+            The parent directory must exist; this method does not create directories.
+            </para>
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.ReportDocument.ToString">
+            <summary>
+            Returns a string representation of this report document.
+            </summary>
+            <returns>A string containing the title and section count.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.ReportDocument.GetSections">
+            <summary>
+            Gets the internal sections list (for testing and rendering).
+            </summary>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Reporting.ReportMetadata">
+            <summary>
+            Contains metadata about the script and environment that generated a report.
+            </summary>
+            <remarks>
+            Most properties are automatically populated from the calling assembly and environment.
+            </remarks>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.ReportMetadata.ScriptName">
+            <summary>
+            Gets or sets the name of the script or application that generated the report.
+            </summary>
+            <value>
+            The script name. Auto-populated from the calling assembly name if not explicitly set.
+            </value>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.ReportMetadata.ScriptVersion">
+            <summary>
+            Gets or sets the version of the script or application.
+            </summary>
+            <value>
+            The script version. Auto-populated from the calling assembly version if not explicitly set.
+            </value>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.ReportMetadata.LibraryName">
+            <summary>
+            Gets or sets the name of the Uclh.XRT.Esapi library.
+            </summary>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.ReportMetadata.LibraryVersion">
+            <summary>
+            Gets or sets the version of the Uclh.XRT.Esapi library.
+            </summary>
+            <value>
+            The library version. Auto-populated from this assembly's version.
+            </value>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.ReportMetadata.UserName">
+            <summary>
+            Gets or sets the username of the person who generated the report.
+            </summary>
+            <value>
+            The username. Auto-populated from <see cref="P:System.Environment.UserName"/>.
+            </value>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.ReportMetadata.GeneratedDateTime">
+            <summary>
+            Gets or sets the date and time when the report was generated.
+            </summary>
+            <value>
+            The generation timestamp. Auto-populated from <see cref="P:System.DateTime.Now"/>.
+            </value>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Reporting.ReportMetadata.OptionalIdentifier">
+            <summary>
+            Gets or sets an optional custom identifier for the report.
+            </summary>
+            <value>
+            An optional identifier such as a GUID, reference number, or custom ID.
+            Not auto-populated; must be set explicitly if needed.
+            </value>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.ReportMetadata.#ctor">
+            <summary>
+            Initializes a new instance of the <see cref="T:Uclh.XRT.Esapi.Reporting.ReportMetadata"/> class
+            with automatically populated metadata.
+            </summary>
+            <remarks>
+            <para>Automatically populates the following properties:</para>
+            <list type="bullet">
+            <item><description><see cref="P:Uclh.XRT.Esapi.Reporting.ReportMetadata.ScriptName"/> - from calling assembly name</description></item>
+            <item><description><see cref="P:Uclh.XRT.Esapi.Reporting.ReportMetadata.ScriptVersion"/> - from calling assembly version</description></item>
+            <item><description><see cref="P:Uclh.XRT.Esapi.Reporting.ReportMetadata.LibraryVersion"/> - from this library's version</description></item>
+            <item><description><see cref="P:Uclh.XRT.Esapi.Reporting.ReportMetadata.UserName"/> - from current Windows username</description></item>
+            <item><description><see cref="P:Uclh.XRT.Esapi.Reporting.ReportMetadata.GeneratedDateTime"/> - from current date/time</description></item>
+            </list>
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Reporting.ReportMetadata.GetCallingAssembly">
+            <summary>
+            Gets the calling assembly (the script that is using this library).
+            </summary>
+            <returns>
+            The calling assembly, or null if it cannot be determined.
+            </returns>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Reporting.ReportStyle">
+            <summary>
+            Defines the visual presentation style for generated HTML reports.
+            </summary>
+        </member>
+        <member name="F:Uclh.XRT.Esapi.Reporting.ReportStyle.Standard">
+            <summary>
+            Standard report style with comfortable spacing and readability.
+            Recommended for general use.
+            </summary>
+        </member>
+        <member name="F:Uclh.XRT.Esapi.Reporting.ReportStyle.Compact">
+            <summary>
+            Compact report style with tighter spacing and smaller fonts.
+            Useful for reports with large amounts of tabular data.
+            </summary>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Utilities.ApprovalInfo">
+            <summary>
+            Generic information about an approval action from any ESAPI object.
+            Note: This represents approval STATUS CHANGES only (from ApprovalHistory).
+            It does NOT include creation/modification metadata shown in the Eclipse GUI.
+            </summary>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Utilities.ApprovalInfo.UserId">
+            <summary>
+            User ID of the person who performed the approval action.
+            </summary>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Utilities.ApprovalInfo.UserDisplayName">
+            <summary>
+            Display name of the person who performed the approval action.
+            </summary>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Utilities.ApprovalInfo.DateTime">
+            <summary>
+            Date and time when the approval action was performed.
+            </summary>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Utilities.ApprovalInfo.FormattedDate">
+            <summary>
+            Formatted date string for display purposes.
+            </summary>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Utilities.ApprovalInfo.Status">
+            <summary>
+            Approval status.
+            </summary>
+        </member>
+        <member name="P:Uclh.XRT.Esapi.Utilities.ApprovalInfo.StatusComment">
+            <summary>
+            Comment associated with the approval status.
+            </summary>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Utilities.ApprovalUtilities">
+            <summary>
+            Static utility methods for working with ESAPI approval histories.
+            Supports PlanSetup, Structure, and Image objects.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ApprovalUtilities.GetCurrentStatus(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Get the current approval status (most recent entry) for a PlanSetup.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ApprovalUtilities.GetMostRecentReview(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Get the most recent review entry for a PlanSetup.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ApprovalUtilities.GetMostRecentPlanningApproval(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Get the most recent planning approval entry for a PlanSetup.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ApprovalUtilities.GetMostRecentTreatmentApproval(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Get the most recent treatment approval entry for a PlanSetup.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ApprovalUtilities.GetMostRecentApproval(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Get the most recent approval of any type (planning or treatment) for a PlanSetup.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ApprovalUtilities.GetFullHistory(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Get complete approval history for a PlanSetup, ordered by date (most recent first).
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ApprovalUtilities.GetCurrentStatus(VMS.TPS.Common.Model.API.Structure)">
+            <summary>
+            Get the current approval status (most recent entry) for a Structure.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ApprovalUtilities.GetMostRecentReview(VMS.TPS.Common.Model.API.Structure)">
+            <summary>
+            Get the most recent review entry for a Structure.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ApprovalUtilities.GetMostRecentApproval(VMS.TPS.Common.Model.API.Structure)">
+            <summary>
+            Get the most recent approval entry for a Structure.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ApprovalUtilities.GetFullHistory(VMS.TPS.Common.Model.API.Structure)">
+            <summary>
+            Get complete approval history for a Structure, ordered by date (most recent first).
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ApprovalUtilities.GetCurrentStatus(VMS.TPS.Common.Model.API.Image)">
+            <summary>
+            Get the current approval status (most recent entry) for an Image.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ApprovalUtilities.GetMostRecentReview(VMS.TPS.Common.Model.API.Image)">
+            <summary>
+            Get the most recent review entry for an Image.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ApprovalUtilities.GetMostRecentApproval(VMS.TPS.Common.Model.API.Image)">
+            <summary>
+            Get the most recent approval entry for an Image.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ApprovalUtilities.GetFullHistory(VMS.TPS.Common.Model.API.Image)">
+            <summary>
+            Get complete approval history for an Image, ordered by date (most recent first).
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ApprovalUtilities.TryGetCreationDateTime(System.Object)">
+            <summary>
+            Try to get creation datetime for any ESAPI object that has a CreationDateTime property.
+            Returns DateTime.MinValue if property doesn't exist or fails.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ApprovalUtilities.TryGetModificationDateTime(System.Object)">
+            <summary>
+            Try to get last modification datetime for any ESAPI object.
+            Checks for ModificationDateTime or HistoryDateTime properties.
+            Returns DateTime.MinValue if property doesn't exist or fails.
+            </summary>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Utilities.BeamAnalyzer">
+            <summary>
+            Provides static methods for analyzing beam and plan properties.
+            </summary>
+            <remarks>
+            All methods filter out setup fields automatically.
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.BeamAnalyzer.GetTreatmentBeams(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Gets all treatment beams (excludes setup fields).
+            </summary>
+            <param name="plan">The <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/> to analyze.</param>
+            <returns>Collection of treatment <see cref="T:VMS.TPS.Common.Model.API.Beam"/> objects.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.BeamAnalyzer.GetArcs(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Gets all arc treatment beams (excludes setup fields).
+            </summary>
+            <param name="plan">The <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/> to analyze.</param>
+            <returns>Collection of arc <see cref="T:VMS.TPS.Common.Model.API.Beam"/> objects (ArcLength > 0).</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.BeamAnalyzer.GetDistinctIsocenters(VMS.TPS.Common.Model.API.PlanSetup,VMS.TPS.Common.Model.Types.VVector)">
+            <summary>
+            Gets distinct isocenters in Standard (Eclipse) coordinates.
+            </summary>
+            <param name="plan">The <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/> to analyze.</param>
+            <param name="userOrigin">The user origin to calculate relative positions.</param>
+            <returns>
+            List of distinct isocenters as <see cref="T:VMS.TPS.Common.Model.Types.VVector"/> objects relative to <paramref name="userOrigin"/>.
+            Units: millimeters (mm). Coordinate system: Standard (Eclipse).
+            </returns>
+            <remarks>
+            Isocenters within 0.01mm tolerance are considered identical.
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.BeamAnalyzer.GetDistinctAbsoluteIsocenters(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Gets distinct isocenters in DICOM coordinates.
+            </summary>
+            <param name="plan">The <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/> to analyze.</param>
+            <returns>
+            List of distinct absolute isocenters as <see cref="T:VMS.TPS.Common.Model.Types.VVector"/> objects.
+            Units: millimeters (mm). Coordinate system: DICOM.
+            </returns>
+            <remarks>
+            Isocenters within 0.01mm tolerance are considered identical.
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.BeamAnalyzer.GetEnergyModes(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Gets concatenated energy modes used in the plan.
+            </summary>
+            <param name="plan">The <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/> to analyze.</param>
+            <returns>
+            String of distinct energy modes separated by " / " (e.g., "6X / 10X-FFF"), or empty string if no beams.
+            </returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.BeamAnalyzer.GetMlcPlanTypes(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Gets concatenated MLC plan types used in the plan.
+            </summary>
+            <param name="plan">The <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/> to analyze.</param>
+            <returns>
+            String of distinct <see cref="T:VMS.TPS.Common.Model.Types.MLCPlanType"/> values separated by " / " (e.g., "DoseDynamic / VMAT"), or empty string if no beams.
+            </returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.BeamAnalyzer.GetTotalMeterset(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Gets total meterset (Monitor Units) across all treatment beams.
+            </summary>
+            <param name="plan">The <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/> to analyze.</param>
+            <returns>Total MU as a double.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.BeamAnalyzer.GetMaxControlPointCount(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Gets the maximum control point count across all treatment beams.
+            </summary>
+            <param name="plan">The <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/> to analyze.</param>
+            <returns>Maximum control point count, or 0 if no beams.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.BeamAnalyzer.UsesTreatmentUnit(VMS.TPS.Common.Model.API.PlanSetup,System.String)">
+            <summary>
+            Checks if any treatment beam uses the specified treatment unit.
+            </summary>
+            <param name="plan">The <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/> to analyze.</param>
+            <param name="unitId">The treatment unit ID to check (e.g., "HalcyonE").</param>
+            <returns><c>true</c> if any beam uses the specified unit; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.BeamAnalyzer.HasMultipleIsocenters(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Checks if the plan has multiple distinct isocenters.
+            </summary>
+            <param name="plan">The <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/> to analyze.</param>
+            <returns><c>true</c> if more than one distinct isocenter; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.BeamAnalyzer.IsHalcyonPlan(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Checks if the plan contains any Halcyon beams.
+            </summary>
+            <param name="plan">The <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/> to analyze.</param>
+            <returns><c>true</c> if any beam uses treatment unit "HalcyonE"; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.BeamAnalyzer.CourseContainsHalcyonPlan(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Checks if the course contains any plans with Halcyon beams.
+            </summary>
+            <param name="plan">The <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/> whose <see cref="T:VMS.TPS.Common.Model.API.Course"/> to check.</param>
+            <returns><c>true</c> if any plan in the course uses treatment unit "HalcyonE"; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.BeamAnalyzer.AreVectorsEqual(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,System.Double)">
+            <summary>
+            Compares two vectors for equality within a tolerance.
+            </summary>
+            <param name="a">First vector.</param>
+            <param name="b">Second vector.</param>
+            <param name="tolerance">Tolerance in millimeters (default: 0.01mm).</param>
+            <returns><c>true</c> if vectors are equal within tolerance; otherwise, <c>false</c>.</returns>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Utilities.BoundingCube">
+            <summary>
+            Class used for storing bounding cube of a structure.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.BoundingCube.GetBoundingCubeFromStructure(VMS.TPS.Common.Model.API.Structure)">
+            <summary>
+            Gets the bounding cube of a structure based on its mesh geometry bounds.
+            </summary>
+            <param name="s">The structure for which to get the bounding cube.</param>
+            <returns>A <see cref="T:Uclh.XRT.Esapi.Utilities.BoundingCube"/> representing the bounds of the structure.</returns>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Utilities.ContourGeometry">
+            <summary>
+            Provides geometric utilities for contour analysis and validation.
+            </summary>
+            <remarks>
+            <para>Includes algorithms for:</para>
+            <list type="bullet">
+            <item><description>Point-in-polygon testing (multiple implementations)</description></item>
+            <item><description>Contour area and perimeter calculations</description></item>
+            <item><description>Contour hole detection</description></item>
+            <item><description>Inter-slice contour validation</description></item>
+            <item><description>Line segment intersection testing</description></item>
+            </list>
+            <para>Coordinate system: All <see cref="T:VMS.TPS.Common.Model.Types.VVector"/> operations use DICOM coordinates in millimeters (mm).</para>
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.CalculatePolygonArea(System.Windows.Point[])">
+            <summary>
+            Calculates the area of a 2D polygon using the Shoelace formula.
+            </summary>
+            <param name="polygon">
+            An array of <see cref="T:System.Windows.Point"/> objects defining the polygon vertices.
+            Vertices must be ordered (either clockwise or counter-clockwise).
+            </param>
+            <returns>
+            The area of the polygon. Units match the input coordinate units (e.g., mm² if points are in mm).
+            </returns>
+            <remarks>
+            <para>This method uses the Shoelace formula (also known as the surveyor's formula).</para>
+            <para>The formula calculates area by summing the cross products of consecutive vertex coordinates.</para>
+            <para>The polygon is assumed to be closed (first and last points connect automatically).</para>
+            <para>The result is always positive (absolute value).</para>
+            <para>For self-intersecting polygons, the result may not be meaningful.</para>
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.ContourLength(VMS.TPS.Common.Model.Types.VVector[])">
+            <summary>
+            Calculates the perimeter length of a contour.
+            </summary>
+            <param name="contour">
+            An array of <see cref="T:VMS.TPS.Common.Model.Types.VVector"/> points defining the contour in 3D space.
+            The contour is assumed to be closed.
+            </param>
+            <returns>
+            The total perimeter length in millimeters (mm).
+            </returns>
+            <remarks>
+            <para>Units: millimeters (mm).</para>
+            <para>The calculation sums Euclidean distances between consecutive points,
+            including the distance from the last point back to the first.</para>
+            </remarks>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.indexOfLargestContour(VMS.TPS.Common.Model.Types.VVector[][])"/>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.indexOfLargestContour(VMS.TPS.Common.Model.Types.VVector[][])">
+            <summary>
+            Finds the index of the largest contour in an array of contours on a single plane.
+            </summary>
+            <param name="contoursOnPlane">
+            A 2D array where each element is a <see cref="T:VMS.TPS.Common.Model.Types.VVector"/>[] representing a single contour.
+            </param>
+            <returns>
+            The zero-based index of the contour with the largest perimeter.
+            </returns>
+            <remarks>
+            "Largest" is determined by perimeter length using <see cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.ContourLength(VMS.TPS.Common.Model.Types.VVector[])"/>.
+            If multiple contours have equal length, the first one encountered is returned.
+            </remarks>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.ContourLength(VMS.TPS.Common.Model.Types.VVector[])"/>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.isPointInMainContour(VMS.TPS.Common.Model.Types.VVector[],VMS.TPS.Common.Model.Types.VVector[])">
+            <summary>
+            Determines whether a test contour's first point lies within a main contour.
+            </summary>
+            <param name="testContour">
+            A <see cref="T:VMS.TPS.Common.Model.Types.VVector"/>[] array representing the test contour.
+            Only the first point [0] is tested.
+            </param>
+            <param name="mainContour">
+            A <see cref="T:VMS.TPS.Common.Model.Types.VVector"/>[] array representing the boundary contour.
+            </param>
+            <returns>
+            <c>true</c> if the first point of <paramref name="testContour"/> is inside <paramref name="mainContour"/>;
+            otherwise, <c>false</c>.
+            </returns>
+            <remarks>
+            <para>Uses the PNPOLY (Point iN POLYgon) ray-casting algorithm.</para>
+            <para>Reference: <see href="https://wrf.ecse.rpi.edu/Research/Short_Notes/pnpoly.html">PNPOLY algorithm</see></para>
+            <para>Only tests the x and y components; z is ignored (2D test on a plane).</para>
+            <para>Points exactly on the boundary may give inconsistent results.</para>
+            </remarks>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.PointInPolygon(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector[])"/>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.IsContourHole_vvector(System.Int32,VMS.TPS.Common.Model.Types.VVector[][])">
+            <summary>
+            Determines whether a contour is a hole (contained within another contour on the same plane).
+            </summary>
+            <param name="indexOfTestContour">The zero-based index of the contour to test within <paramref name="contoursOnPlane"/>.</param>
+            <param name="contoursOnPlane">
+            A 2D array of all contours for a structure on a single image plane.
+            </param>
+            <returns>
+            <c>true</c> if the test contour is contained within any other contour on the same plane; otherwise, <c>false</c>.
+            </returns>
+            <remarks>
+            <para>Uses the PNPOLY ray-casting algorithm to test the first point of the test contour.</para>
+            <para>Reference: <see href="https://wrf.ecse.rpi.edu/Research/Short_Notes/pnpoly.html">PNPOLY algorithm</see></para>
+            </remarks>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.ContourIsAHole(VMS.TPS.Common.Model.Types.VVector[][],System.Int32)"/>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.ContourHasNeighbours(System.Int32,System.Int32,VMS.TPS.Common.Model.API.Structure)">
+            <summary>
+            Validates that a structure contour on a given slice has neighboring contours.
+            </summary>
+            <param name="sliceNumber">The zero-based slice index to test.</param>
+            <param name="numberOfSlices">The total number of slices in the image.</param>
+            <param name="s">The <see cref="T:VMS.TPS.Common.Model.API.Structure"/> to analyze.</param>
+            <returns>
+            <c>true</c> if the slice has no contour, or if at least one neighboring slice has a contour;
+            <c>false</c> if the test slice has a contour but neither neighbor does.
+            </returns>
+            <remarks>
+            <para>Useful for detecting isolated single-slice contours that may indicate contouring errors.</para>
+            <para>Edge slices (0 and last) only check one neighbor.</para>
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.ContourIntersectsNeighbour(System.Int32,System.Int32,VMS.TPS.Common.Model.Types.VVector[],VMS.TPS.Common.Model.API.Structure)">
+            <summary>
+            Checks whether any points in a test contour intersect with contours on neighboring slices.
+            </summary>
+            <param name="sliceNumber">The zero-based slice index of the test contour.</param>
+            <param name="numberOfSlices">The total number of slices in the image.</param>
+            <param name="testContour">The contour to test for intersection.</param>
+            <param name="s">The <see cref="T:VMS.TPS.Common.Model.API.Structure"/> containing the contours.</param>
+            <returns>
+            <c>true</c> if at least one point in <paramref name="testContour"/> is inside a neighboring slice's contour,
+            or if the test contour is entirely contained within a neighboring contour; otherwise, <c>false</c>.
+            </returns>
+            <remarks>
+            <para>Tests both the slice before and after (if they exist).</para>
+            <para>First checks for complete containment using <see cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.IsContourInsideContours(VMS.TPS.Common.Model.Types.VVector[],VMS.TPS.Common.Model.Types.VVector[][])"/>,
+            then tests individual points using <see cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.PointInPolygon(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector[])"/>.</para>
+            </remarks>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.IsContourInsideContours(VMS.TPS.Common.Model.Types.VVector[],VMS.TPS.Common.Model.Types.VVector[][])"/>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.PointInPolygon(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector[])"/>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.numberOfContoursEqualToNeighbours(System.Int32,System.Int32,VMS.TPS.Common.Model.API.Structure)">
+            <summary>
+            Checks whether the number of external contours on a slice matches its neighbors.
+            </summary>
+            <param name="sliceNumber">The zero-based slice index to test.</param>
+            <param name="numberOfSlices">The total number of slices in the image.</param>
+            <param name="s">The <see cref="T:VMS.TPS.Common.Model.API.Structure"/> to analyze.</param>
+            <returns>
+            <c>true</c> if the number of external contours matches at least one neighbor, or if neighbors differ;
+            <c>false</c> if both neighbors have the same count but the test slice differs.
+            </returns>
+            <remarks>
+            <para>External contours are those that are not holes (not contained within other contours).</para>
+            <para>Edge slices (first and last) always return <c>true</c>.</para>
+            <para>Uses <see cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.IsInside(VMS.TPS.Common.Model.Types.VVector[],System.Int32,VMS.TPS.Common.Model.Types.VVector)"/> to identify holes within the test slice.</para>
+            </remarks>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.IsInside(VMS.TPS.Common.Model.Types.VVector[],System.Int32,VMS.TPS.Common.Model.Types.VVector)"/>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.ContourIsWithinBody(System.Int32,VMS.TPS.Common.Model.Types.VVector[],System.Collections.Generic.IEnumerable{VMS.TPS.Common.Model.API.Structure})">
+            <summary>
+            Checks whether any point in a contour lies within or overlaps the Body structure.
+            </summary>
+            <param name="sliceNumber">The zero-based slice index where the contour exists.</param>
+            <param name="testContour">The contour to test.</param>
+            <param name="structures">Collection of structures to search for the EXTERNAL (Body) structure.</param>
+            <returns>
+            <c>true</c> if any point in <paramref name="testContour"/> is inside the Body structure;
+            <c>false</c> if the contour is entirely outside the Body, or if no EXTERNAL structure exists.
+            </returns>
+            <remarks>
+            <para>Searches for a structure with <see cref="P:VMS.TPS.Common.Model.API.Structure.DicomType"/> == "EXTERNAL".</para>
+            <para>Uses <see cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.IsInside(VMS.TPS.Common.Model.Types.VVector[],System.Int32,VMS.TPS.Common.Model.Types.VVector)"/> to test each point of the test contour.</para>
+            </remarks>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.IsInside(VMS.TPS.Common.Model.Types.VVector[],System.Int32,VMS.TPS.Common.Model.Types.VVector)"/>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.ContourIsAHole(VMS.TPS.Common.Model.Types.VVector[][],System.Int32)">
+            <summary>
+            Determines whether a contour is a hole within another contour on the same plane.
+            </summary>
+            <param name="contoursOnPlane">All contours for a structure on a single plane.</param>
+            <param name="contourIndex">The zero-based index of the contour to test.</param>
+            <returns>
+            <c>true</c> if the contour at <paramref name="contourIndex"/> is contained within any other contour; otherwise, <c>false</c>.
+            </returns>
+            <remarks>
+            <para>Tests only the first point [0] of the test contour.</para>
+            <para>If any single point is inside another contour, the entire contour is assumed to be a hole.</para>
+            <para>Uses <see cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.IsInside(VMS.TPS.Common.Model.Types.VVector[],System.Int32,VMS.TPS.Common.Model.Types.VVector)"/> for point-in-polygon testing.</para>
+            </remarks>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.ContourIsAHole(VMS.TPS.Common.Model.Types.VVector[][],System.Int32)"/>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.IsInside(VMS.TPS.Common.Model.Types.VVector[],System.Int32,VMS.TPS.Common.Model.Types.VVector)"/>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.IsContourInsideContours(VMS.TPS.Common.Model.Types.VVector[],VMS.TPS.Common.Model.Types.VVector[][])">
+            <summary>
+            Checks whether a test contour is inside any contour from a different plane.
+            </summary>
+            <param name="testContour">The contour to test.</param>
+            <param name="contoursOnOtherPlane">Contours from a different image plane.</param>
+            <returns>
+            <c>true</c> if the first point [0] of any contour in <paramref name="contoursOnOtherPlane"/>
+            is inside <paramref name="testContour"/>; otherwise, <c>false</c>.
+            </returns>
+            <remarks>
+            Used by <see cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.ContourIntersectsNeighbour(System.Int32,System.Int32,VMS.TPS.Common.Model.Types.VVector[],VMS.TPS.Common.Model.API.Structure)"/> to check inter-slice containment.
+            </remarks>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.ContourIntersectsNeighbour(System.Int32,System.Int32,VMS.TPS.Common.Model.Types.VVector[],VMS.TPS.Common.Model.API.Structure)"/>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.IsInside(VMS.TPS.Common.Model.Types.VVector[],System.Int32,VMS.TPS.Common.Model.Types.VVector)"/>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.OnSegment(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector)">
+            <summary>
+            Checks if point q lies on the line segment 'pr' given that p, q, r are collinear.
+            </summary>
+            <param name="p">First endpoint of the line segment.</param>
+            <param name="q">Point to test.</param>
+            <param name="r">Second endpoint of the line segment.</param>
+            <returns>
+            <c>true</c> if point q lies on segment pr; otherwise, <c>false</c>.
+            </returns>
+            <remarks>
+            This method assumes the three points are already collinear.
+            Used by <see cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.DoIntersect(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector)"/> for special cases of line intersection.
+            </remarks>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.DoIntersect(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector)"/>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.Orientation(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector)"/>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.Orientation(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector)">
+            <summary>
+            Determines the orientation of an ordered triplet of points.
+            </summary>
+            <param name="p">First point.</param>
+            <param name="q">Second point.</param>
+            <param name="r">Third point.</param>
+            <returns>
+            0 if the points are collinear;
+            1 if clockwise orientation;
+            2 if counter-clockwise orientation.
+            </returns>
+            <remarks>
+            <para>Calculates the cross product: (q.y - p.y) × (r.x - q.x) - (r.y - q.y) × (q.x - p.x)</para>
+            <para>Used by <see cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.DoIntersect(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector)"/> to determine line segment intersection.</para>
+            </remarks>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.DoIntersect(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector)"/>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.DoIntersect(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector)">
+            <summary>
+            Determines if two line segments intersect.
+            </summary>
+            <param name="p1">First point of the first segment.</param>
+            <param name="q1">Second point of the first segment.</param>
+            <param name="p2">First point of the second segment.</param>
+            <param name="q2">Second point of the second segment.</param>
+            <returns>
+            <c>true</c> if line segments p1q1 and p2q2 intersect; otherwise, <c>false</c>.
+            </returns>
+            <remarks>
+            <para>Handles both general intersection cases and special collinear cases.</para>
+            <para>Uses <see cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.Orientation(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector)"/> to detect orientations and <see cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.OnSegment(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector)"/> for collinear points.</para>
+            <para>Used by <see cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.IsInside(VMS.TPS.Common.Model.Types.VVector[],System.Int32,VMS.TPS.Common.Model.Types.VVector)"/> for ray-casting point-in-polygon tests.</para>
+            </remarks>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.Orientation(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector)"/>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.OnSegment(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector)"/>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.IsInside(VMS.TPS.Common.Model.Types.VVector[],System.Int32,VMS.TPS.Common.Model.Types.VVector)"/>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.IsInside(VMS.TPS.Common.Model.Types.VVector[],System.Int32,VMS.TPS.Common.Model.Types.VVector)">
+            <summary>
+            Determines if a point lies inside a polygon using ray-casting.
+            </summary>
+            <param name="polygon">Array of vertices defining the polygon boundary.</param>
+            <param name="n">Number of vertices in the polygon.</param>
+            <param name="p">The point to test.</param>
+            <returns>
+            <c>true</c> if point <paramref name="p"/> is inside the polygon; otherwise, <c>false</c>.
+            </returns>
+            <remarks>
+            <para>Uses ray-casting along the +X axis from point p to infinity (x=10000).</para>
+            <para>Counts intersections with polygon edges; odd count means inside, even means outside.</para>
+            <para>Known edge case: A ray passing exactly through a vertex can produce rare false negatives
+            for individual points. Callers typically test multiple points per contour to mitigate this.</para>
+            <para>Uses <see cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.DoIntersect(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector)"/>, <see cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.Orientation(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector)"/>, and <see cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.OnSegment(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector)"/>.</para>
+            </remarks>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.PointInPolygon(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector[])"/>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.DoIntersect(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector)"/>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.IsInsideRayCast(VMS.TPS.Common.Model.Types.VVector[],System.Int32,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector)">
+            <summary>
+            Helper method for ray-casting point-in-polygon test.
+            </summary>
+            <param name="polygon">Array of vertices defining the polygon.</param>
+            <param name="n">Number of vertices.</param>
+            <param name="p">Point to test.</param>
+            <param name="extreme">Extreme point defining the ray direction.</param>
+            <returns>
+            <c>true</c> if an odd number of intersections (point is inside); otherwise, <c>false</c>.
+            </returns>
+            <remarks>
+            This is an internal helper with explicit extreme point parameter.
+            Consider using <see cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.IsInside(VMS.TPS.Common.Model.Types.VVector[],System.Int32,VMS.TPS.Common.Model.Types.VVector)"/> instead.
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.PointInPolygon(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector[])">
+            <summary>
+            Checks if a point is inside a polygon using the PNPOLY algorithm.
+            </summary>
+            <param name="point">The point to test.</param>
+            <param name="polygon">Array of vertices defining the polygon boundary.</param>
+            <returns>
+            <c>true</c> if the point is inside the polygon or exactly on the boundary; otherwise, <c>false</c>.
+            </returns>
+            <remarks>
+            <para>Alternative point-in-polygon implementation to <see cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.IsInside(VMS.TPS.Common.Model.Types.VVector[],System.Int32,VMS.TPS.Common.Model.Types.VVector)"/>.</para>
+            <para>Uses a horizontal ray-casting approach with edge-crossing detection.</para>
+            <para>Only tests x and y components; z is ignored.</para>
+            </remarks>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.ContourGeometry.IsInside(VMS.TPS.Common.Model.Types.VVector[],System.Int32,VMS.TPS.Common.Model.Types.VVector)"/>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Utilities.CouchConfiguration">
+            <summary>
+            Enum representing different couch configurations in a treatment plan.
+            </summary>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Utilities.CouchInfo">
+            <summary>
+            Represents information about the couch configuration in a treatment plan, including the presence of couch surfaces, interiors, rails, and the overall configuration type.
+            </summary>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Utilities.CouchAnalyzer">
+            <summary>
+            Provides utility methods for analyzing couch configurations in a treatment plan's structure set.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.CouchAnalyzer.AnalyzeCouchConfiguration(VMS.TPS.Common.Model.API.StructureSet)">
+            <summary>
+            Analyze couch configuration from structure set.
+            </summary>
+            <param name="structureSet">The <see cref="T:VMS.TPS.Common.Model.API.StructureSet"/> to analyze.</param>
+            <returns>A <see cref="T:Uclh.XRT.Esapi.Utilities.CouchInfo"/> object containing information about the couch configuration.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.CouchAnalyzer.GetBodyStructure(VMS.TPS.Common.Model.API.StructureSet)">
+            <summary>
+            Get BODY/EXTERNAL structure from structure set.
+            </summary>
+            <param name="structureSet">The <see cref="T:VMS.TPS.Common.Model.API.StructureSet"/> to analyze.</param>
+            <returns>The <see cref="T:VMS.TPS.Common.Model.API.Structure"/> representing the BODY/EXTERNAL structure.</returns>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Utilities.DicomConverters">
+            <summary>
+            Provides utility methods for converting DICOM coordinates to TPS coordinates.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.DicomConverters.DicomToUser_x(VMS.TPS.Common.Model.API.Image,System.Double)">
+            <summary>
+            Coverts DICOM x-coordinate to TPS x-coordinate in cm.
+            </summary>
+            <param name="im">The <see cref="T:VMS.TPS.Common.Model.API.Image"/> reference passed as value.</param>
+            <param name="dicomx_mm">DICOM x coordinate.</param>
+            <returns>TPS x coordinate in cm</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.DicomConverters.DicomToUser_y(VMS.TPS.Common.Model.API.Image,System.Double)">
+            <summary>
+            Coverts DICOM y-coordinate to TPS y-coordinate in cm.
+            </summary>
+            <param name="im">The <see cref="T:VMS.TPS.Common.Model.API.Image"/> reference passed as value.</param>
+            <param name="dicomy_mm">DICOM y coordinate.</param>
+            <returns>TPS y coordinate in cm</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.DicomConverters.DicomToUser_z(VMS.TPS.Common.Model.API.Image,System.Double)">
+            <summary>
+            Coverts DICOM z-coordinate to TPS z-coordinate in cm.
+            </summary>
+            <param name="im">The <see cref="T:VMS.TPS.Common.Model.API.Image"/> reference passed as value.</param>
+            <param name="dicomz_mm">DICOM z coordinate.</param>
+            <returns>TPS z coordinate in cm</returns>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Utilities.DoseAlgorithmType">
+            <summary>
+            Enumerates the types of dose calculation algorithms used in treatment planning.
+            </summary>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Utilities.DoseCalculationType">
+            <summary>
+            Enumerates the types of dose calculations used in treatment planning.
+            </summary>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Utilities.DoseAlgorithmInfo">
+            <summary>
+            Represents information about the dose calculation algorithm used in a treatment plan, including its type and version.
+            </summary>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Utilities.OptimizerInfo">
+            <summary>
+            Represents information about the optimizer used in a treatment plan, including whether it was used, the algorithm type, version, dose algorithm, and structures with lower objectives.
+            </summary>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Utilities.DoseAnalyzer">
+            <summary>
+            Provides utility methods for analyzing dose and optimization information from a treatment plan.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.DoseAnalyzer.HasCalculatedDose(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Checks if the plan has a calculated dose.
+            </summary>
+            <param name="plan">The <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/> to check.</param>
+            <returns>True if the plan has a calculated dose; otherwise, false.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.DoseAnalyzer.GetDoseCalculationType(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Gets the type of dose calculation used in the plan (Field or Plan).
+            </summary>
+            <param name="plan">The <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/> to check.</param>
+            <returns>The type of dose calculation used in the plan.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.DoseAnalyzer.GetDoseAlgorithm(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Gets the dose algorithm information (type and version) used in the plan.
+            </summary>
+            <param name="plan">The <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/> to check.</param>
+            <returns>The dose algorithm information used in the plan.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.DoseAnalyzer.GetOptimizerInfo(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Gets information about the optimizer used in the plan, including whether it was used, the algorithm type, version, dose algorithm, and structures with lower objectives.
+            </summary>
+            <param name="plan">The <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/> to check.</param>
+            <returns>The optimizer information for the plan.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.DoseAnalyzer.GetAllCalculationLogText(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Gets all calculation log messages from the plan's beams, excluding setup fields.
+            </summary>
+            <param name="plan">The <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/> to check.</param>
+            <returns>A list of all calculation log messages.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.DoseAnalyzer.GetCalculationLogsByBeam(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Gets calculation log messages grouped by beam, excluding setup fields. Each log entry includes the beam ID, category, and message lines.
+            </summary>
+            <param name="plan">The <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/> to check.</param>
+            <returns>A list of calculation log messages grouped by beam.</returns>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Utilities.HelperFunctions">
+            <summary>
+            Class containing general static methods, useful in ESAPI applications. 
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.HelperFunctions.IsDoseValueMissingOrInvalid(VMS.TPS.Common.Model.Types.DoseValue)">
+            <summary>
+            Returns true if the dose value is undefined or uses a non-absolute / unsupported unit.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.HelperFunctions.ConvertAbsoluteDoseToUnit(VMS.TPS.Common.Model.Types.DoseValue,VMS.TPS.Common.Model.Types.DoseValue.DoseUnit)">
+            <summary>
+            Converts an absolute dose value (Gy/cGy) to the requested absolute unit.
+            Returns null if conversion is not possible.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.HelperFunctions.GetBasePlanId(System.String)">
+            <summary>
+            For plans with suffix " H", " D" or " F", indicating backup plan, return the base plan ID.
+            Also strips common replan/retreat/rescan prefixes: "RPLN", "REPLN", "RSCN", "RTRT".
+            </summary>
+            <param name="planId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.HelperFunctions.GetBasePlanIdWithReplan(System.String)">
+            <summary>
+            For plans with suffix " H", " D" or " F", indicating backup plan, return the base plan ID.
+            </summary>
+            <param name="planId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.HelperFunctions.IsInsideStructureBounds(VMS.TPS.Common.Model.Types.VVector,Uclh.XRT.Esapi.Utilities.BoundingCube)">
+            <summary>
+            Determines whether a VVector point is within the bounding cube of a structure.
+            </summary>
+            <param name="point"></param>
+            <param name="structure"></param>
+            <returns>True if within the bounding cube, false if not.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.HelperFunctions.DensityScaledDepth(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.API.Image,System.Double,Uclh.XRT.Esapi.Utilities.BoundingCube)">
+            <summary>
+            
+            </summary>
+            <param name="testPoint"></param>
+            <param name="sourcePosition"></param>
+            <param name="image"></param>
+            <param name="resolution"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.HelperFunctions.IsPointInsideImage(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.API.Image)">
+            <summary>
+            Takes a VVector point and Image and checks whether the point is within the bounds of the image.
+            </summary>
+            <param name="point"></param>
+            <param name="image"></param>
+            <returns>True if inside image, false if not.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.HelperFunctions.TriagePlan(System.String)">
+            <summary>
+            Method used for taking the plan ID and trying to triage it into one of a smaller number of categories. This may be useful for auditing / plan statistics.
+            </summary>
+            <param name="planName"></param>
+            <returns>Triaged plan name.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.HelperFunctions.IsocenterPositionWithinAcceptableValues(Uclh.XRT.Esapi.Core.PlanInfo,System.Double)">
+            <summary>
+            Check method used to determine whether current isocentre placement is within the acceptable values of RTP 202.
+            </summary>
+            <param name="plan"></param>
+            <returns>True if isocentre position within acceptable range. False if not.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.HelperFunctions.StringLateralityCheck(System.String)">
+            <summary>
+            Test that takes a string input and checks for identifiers of laterality.
+            </summary>
+            <param name="input">String input to check for laterality indicator.</param>
+            <returns>0 if no laterality in string, 1 if string indicates LEFT, 2 if string indicates RIGHT.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.HelperFunctions.GantryAngleToCustomAngle(System.Double)">
+            <summary>
+            Converts gantry angle into a custom gantry angle, where 0 starts at G180, rises to 90 and gantry rotates clockwise (G270), is
+            180 at G0 and 270 at G90.
+            </summary>
+            <param name="angle"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.HelperFunctions.CustomAngleToGantryAngle(System.Double)">
+            <summary>
+            Converts custom gantry angle into standard gantry angle. In the custom gantry angle system,  0 starts at G180, rises to 90 and gantry rotates clockwise (G270), is
+            180 at G0 and 270 at G90.
+            </summary>
+            <param name="angle"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.HelperFunctions.GetDicomYAboveRef(VMS.TPS.Common.Model.API.Image,System.Double,System.Double)">
+            <summary>
+            Tkes the y-axis dicom coordinate of the scanner reference position and a shift distance in mm between the reference position and couch
+            surface to return the y-axis dicom coordinate of the couch surface.
+            </summary>
+            <param name="im">Image reference.</param>
+            <param name="refy_dicom">Dicom y position of the scanner reference position (depends on scanner).</param>
+            <param name="shift">The shift in mm from the reference position to the couch surface.</param>
+            <returns>Dicom y coordinate as type double.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.HelperFunctions.GetImageUsefulImageExtent(VMS.TPS.Common.Model.API.Image,System.Int32)">
+            <summary>
+            Returns the lateral extent of an image (in mm) when provided an integer plane y.
+            </summary>
+            <param name="im">Passing Image reference by value.</param>
+            <param name="y">Integer value representing the ANT-POST plane.</param>
+            <returns></returns>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Utilities.MlcUtilities">
+            <summary>
+            Provides utility methods for analyzing and extracting information from MLC (Multi-Leaf Collimator) configurations in a treatment plan.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.MlcUtilities.UpperLimitLeafNumber(VMS.TPS.Common.Model.API.ControlPoint,System.Boolean)">
+            <summary>
+            Returns the greatest leaf number within the y-jaws at the control point (Varian # - not C# 0 based).
+            Includes leaves that are partially covered by Y2 jaw.
+            </summary>
+            <param name="cp">The <see cref="T:VMS.TPS.Common.Model.API.ControlPoint"/> containing the jaw positions.</param>
+            <param name="isMillennium">Indicates whether the MLC is a Millennium type.</param>
+            <returns>The greatest leaf number within the y-jaws at the control point.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.MlcUtilities.LowerLimitLeafNumber(VMS.TPS.Common.Model.API.ControlPoint,System.Boolean)">
+            <summary>
+            Returns the lowest leaf number within the y-jaws at the control point (Varian # - not C# 0 based).
+            Includes leaves that are partially covered by Y1 jaw.
+            </summary>
+            <param name="cp">The <see cref="T:VMS.TPS.Common.Model.API.ControlPoint"/> containing the jaw positions.</param>
+            <param name="isMillennium">Indicates whether the MLC is a Millennium type.</param>
+            <returns>The lowest leaf number within the y-jaws at the control point.</returns>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Utilities.StringMatching">
+            <summary>
+            Provides utility methods for string matching and finding closest matches based on Levenshtein distance.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.StringMatching.FindClosestMatches(System.Collections.Generic.List{System.String},System.String,System.Int32)">
+            <summary>
+            Finds the closest matches from a list of candidate strings to a target string based on Levenshtein distance, within a specified threshold.
+            </summary>
+            <param name="candidates">The list of candidate strings to compare against the target string.</param>
+            <param name="target">The target string to compare against the candidate strings.</param>
+            <param name="threshold">The maximum allowed Levenshtein distance for a match.</param>
+            <returns>A list of candidate strings that are within the specified Levenshtein distance threshold from the target string.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.StringMatching.FindClosestMatch(System.Collections.Generic.List{System.String},System.String,System.Int32)">
+            <summary>
+            Finds the closest match from a list of strings to a target string based on Levenshtein distance, within a specified threshold.
+            </summary>
+            <param name="stringList">The list of strings to compare against the target string.</param>
+            <param name="input">The target string to compare against the list of strings.</param>
+            <param name="threshold">The maximum allowed Levenshtein distance for a match.</param>
+            <returns>The closest matching string within the specified Levenshtein distance threshold, or null if no match is found.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.StringMatching.LevenshteinDistance(System.String,System.String)">
+            <summary>
+            Calculates the Levenshtein distance between two strings, which is a measure of the number of single-character edits (insertions, deletions, or substitutions) required to change one string into the other.
+            </summary>
+            <param name="s1">The first string to compare.</param>
+            <param name="s2">The second string to compare.</param>
+            <returns>The Levenshtein distance between the two strings.</returns>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Utilities.StructureUtilities">
+            <summary>
+            Provides utility methods for analyzing and extracting information from structures in a treatment plan.
+            </summary>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.StructureUtilities.GetInfSupStructureSlices(VMS.TPS.Common.Model.API.PlanSetup,VMS.TPS.Common.Model.API.Structure)">
+            <summary>
+            Returns an int[2]. The first entry is the most sup slice containing a contour for structure s, and second entry is the most inf slice containing a contour for structure s.
+            </summary>
+            <param name="ps">The <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/> containing the structure set.</param>
+            <param name="s">The <see cref="T:VMS.TPS.Common.Model.API.Structure"/> for which to find the infimum and supremum slices.</param>
+            <returns>An array of two integers: the first is the most superior slice index, and the second is the most inferior slice index containing a contour for the structure.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.StructureUtilities.GetLowerBodySurfaceCentral(VMS.TPS.Common.Model.API.Image,VMS.TPS.Common.Model.API.Structure)">
+            <summary>
+            Returns the y-axis DICOM coordinates of the lowest (closest to floor in room coordinate system) part of the BODY contour. Throws an ArgumentNullException if either the Image or BODY structure is null.
+            </summary>
+            <param name="im">The <see cref="T:VMS.TPS.Common.Model.API.Image"/> reference.</param>
+            <param name="body">The <see cref="T:VMS.TPS.Common.Model.API.Structure"/> reference for the BODY structure.</param>
+            <returns>The y-axis DICOM coordinate of the lowest part of the BODY contour.</returns>
+            <exception cref="T:System.ArgumentNullException"></exception>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.StructureUtilities.GetLowerBodySurface(VMS.TPS.Common.Model.API.PlanSetup)">
+            <summary>
+            Returns the y-axis DICOM coordinates of the lowest (closest to floor in room coordinate system) part of the EXTERNAL contour. Throws an Exception if there is no EXTERNAL structure.
+            </summary>
+            <param name="ps">The <see cref="T:VMS.TPS.Common.Model.API.PlanSetup"/> for the treatment plan.</param>
+            <returns>The y-axis DICOM coordinate of the lowest part of the EXTERNAL contour.</returns>
+            <exception cref="T:System.Exception">Thrown if there is no EXTERNAL structure.</exception>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Utilities.VoxelUtilities">
+            <summary>
+            Provides utilities for converting between voxel indices and spatial coordinates.
+            </summary>
+            <remarks>
+            <para>Handles conversions between three coordinate systems:</para>
+            <list type="bullet">
+            <item><description>Voxel indices: Zero-based integer indices (x, y, z)</description></item>
+            <item><description>DICOM coordinates: IEC 61217 Patient Coordinate System in millimeters (mm)</description></item>
+            <item><description>Standard coordinates: Eclipse Standard Coordinate System (relative to <see cref="P:VMS.TPS.Common.Model.API.Image.UserOrigin"/>) in millimeters or centimeters</description></item>
+            </list>
+            <para>All conversions account for <see cref="T:VMS.TPS.Common.Model.Types.PatientOrientation"/> to apply correct directional signs.</para>
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.VoxelUtilities.VoxelToVVector(VMS.TPS.Common.Model.API.Image,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Converts voxel indices to a position vector in DICOM coordinates.
+            </summary>
+            <param name="im">The <see cref="T:VMS.TPS.Common.Model.API.Image"/> containing voxel spacing and origin information.</param>
+            <param name="x">Zero-based voxel index along the x-axis.</param>
+            <param name="y">Zero-based voxel index along the y-axis.</param>
+            <param name="z">Zero-based voxel index along the z-axis.</param>
+            <returns>
+            A <see cref="T:VMS.TPS.Common.Model.Types.VVector"/> containing DICOM coordinates in millimeters (mm).
+            Components are (x, y, z) in the DICOM coordinate system.
+            </returns>
+            <remarks>
+            <para>Output coordinate system: DICOM (IEC 61217 Patient Coordinate System).</para>
+            <para>Output units: millimeters (mm).</para>
+            </remarks>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.VoxelUtilities.VoxelToCoordinates(VMS.TPS.Common.Model.API.Image,System.Int32,System.Int32,System.Int32)"/>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.VoxelUtilities.VoxelToCoordinates(VMS.TPS.Common.Model.API.Image,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Converts voxel indices to both DICOM and Standard (Eclipse) coordinates.
+            </summary>
+            <param name="im">The <see cref="T:VMS.TPS.Common.Model.API.Image"/> containing voxel spacing, origin, and user origin information.</param>
+            <param name="x">Zero-based voxel index along the x-axis.</param>
+            <param name="y">Zero-based voxel index along the y-axis.</param>
+            <param name="z">Zero-based voxel index along the z-axis.</param>
+            <returns>
+            A double array containing six elements: [dicomX, dicomY, dicomZ, standardX, standardY, standardZ].
+            All values are in millimeters (mm).
+            </returns>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.VoxelUtilities.VoxelToVVector(VMS.TPS.Common.Model.API.Image,System.Int32,System.Int32,System.Int32)"/>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.VoxelUtilities.VoxelToUser_x(VMS.TPS.Common.Model.API.Image,System.Int32)"/>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.VoxelUtilities.VoxelToUser_y(VMS.TPS.Common.Model.API.Image,System.Int32)"/>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.VoxelUtilities.VoxelToUser_z(VMS.TPS.Common.Model.API.Image,System.Int32)"/>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.VoxelUtilities.VoxelToUser_x(VMS.TPS.Common.Model.API.Image,System.Int32)">
+            <summary>
+            Converts voxel x-index to Standard (Eclipse) x-coordinate in centimeters.
+            </summary>
+            <returns>The Standard x-coordinate in centimeters (cm).</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.VoxelUtilities.VoxelToUser_y(VMS.TPS.Common.Model.API.Image,System.Int32)">
+            <summary>
+            Converts voxel y-index to Standard (Eclipse) y-coordinate in centimeters.
+            </summary>
+            <param name="im">The <see cref="T:VMS.TPS.Common.Model.API.Image"/> containing voxel spacing, origin, and user origin.</param>
+            <param name="y">Zero-based voxel index along the y-axis.</param>
+            <returns>The Standard y-coordinate in centimeters (cm).</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.VoxelUtilities.VoxelToUser_z(VMS.TPS.Common.Model.API.Image,System.Int32)">
+            <summary>
+            Converts voxel z-index to Standard (Eclipse) z-coordinate in centimeters.
+            </summary>
+            <param name="im">The <see cref="T:VMS.TPS.Common.Model.API.Image"/> containing voxel spacing, origin, and user origin.</param>
+            <param name="z">Zero-based voxel index along the z-axis.</param>
+            <returns>The Standard z-coordinate in centimeters (cm).</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.VoxelUtilities.VoxelToDicom_x(VMS.TPS.Common.Model.API.Image,System.Int32)">
+            <summary>
+            Converts voxel x-index to DICOM x-coordinate.
+            </summary>
+            <param name="im">The <see cref="T:VMS.TPS.Common.Model.API.Image"/> containing voxel spacing and origin.</param>
+            <param name="x">Zero-based voxel index along the x-axis.</param>
+            <returns>The DICOM x-coordinate in millimeters (mm).</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.VoxelUtilities.VoxelToDicom_y(VMS.TPS.Common.Model.API.Image,System.Int32,System.Int32)">
+            <summary>
+            Converts voxel y-index to DICOM y-coordinate with optional scaling.
+            </summary>
+            <param name="im">The <see cref="T:VMS.TPS.Common.Model.API.Image"/> containing voxel spacing and origin.</param>
+            <param name="y">Zero-based voxel index along the y-axis.</param>
+            <param name="scaling">Divisor for voxel resolution scaling (default: 1, no scaling).</param>
+            <returns>The DICOM y-coordinate in millimeters (mm).</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.VoxelUtilities.VoxelToDicom_z(VMS.TPS.Common.Model.API.Image,System.Int32)">
+            <summary>
+            Converts voxel z-index to DICOM z-coordinate.
+            </summary>
+            <param name="im">The <see cref="T:VMS.TPS.Common.Model.API.Image"/> containing voxel spacing and origin.</param>
+            <param name="z">Zero-based voxel index along the z-axis.</param>
+            <returns>The DICOM z-coordinate in millimeters (mm).</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.VoxelUtilities.DicomToVoxel_x(VMS.TPS.Common.Model.API.Image,System.Double)">
+            <summary>
+            Converts DICOM x-coordinate to voxel x-index.
+            </summary>
+            <param name="im">The <see cref="T:VMS.TPS.Common.Model.API.Image"/> containing voxel spacing and origin.</param>
+            <param name="dicom_x">The DICOM x-coordinate in millimeters (mm).</param>
+            <returns>The zero-based voxel index along the x-axis (truncated to integer).</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.VoxelUtilities.DicomToVoxel_y(VMS.TPS.Common.Model.API.Image,System.Double)">
+            <summary>
+            Converts DICOM y-coordinate to voxel y-index.
+            </summary>
+            <param name="im">The <see cref="T:VMS.TPS.Common.Model.API.Image"/> containing voxel spacing and origin.</param>
+            <param name="dicom_y">The DICOM y-coordinate in millimeters (mm).</param>
+            <returns>The zero-based voxel index along the y-axis (truncated to integer).</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.VoxelUtilities.DicomToVoxel_z(VMS.TPS.Common.Model.API.Image,System.Double)">
+            <summary>
+            Converts DICOM z-coordinate to voxel z-index.
+            </summary>
+            <param name="im">The <see cref="T:VMS.TPS.Common.Model.API.Image"/> containing voxel spacing and origin.</param>
+            <param name="dicom_z">The DICOM z-coordinate in millimeters (mm).</param>
+            <returns>The zero-based voxel index along the z-axis (truncated to integer).</returns>
+        </member>
+        <member name="T:Uclh.XRT.Esapi.Utilities.VvectorUtilities">
+            <summary>
+            Provides utility methods for <see cref="T:VMS.TPS.Common.Model.Types.VVector"/> formatting and coordinate conversions.
+            </summary>
+            <remarks>
+            Handles conversions between DICOM and TPS user (Standard) coordinate systems,
+            and provides string formatting with unit conversions (mm to cm).
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.VvectorUtilities.VvectorCoordsToString_cm(VMS.TPS.Common.Model.Types.VVector,System.String)">
+            <summary>
+            Converts a <see cref="T:VMS.TPS.Common.Model.Types.VVector"/> to a delimited string in centimeters.
+            </summary>
+            <param name="v">The <see cref="T:VMS.TPS.Common.Model.Types.VVector"/> to convert. Assumes values are in millimeters (mm).</param>
+            <param name="delimeter">The delimiter string to separate x, y, and z components.</param>
+            <returns>
+            A string in the format "x{delimeter}y{delimeter}z" where each value is in centimeters (cm)
+            formatted to 2 decimal places.
+            </returns>
+            <remarks>
+            <para>Input units: millimeters (mm) - standard <see cref="T:VMS.TPS.Common.Model.Types.VVector"/> units in ESAPI.</para>
+            <para>Output units: centimeters (cm) - values are divided by 10.</para>
+            <para>Coordinate system: same as input (no coordinate transformation applied).</para>
+            <para>Example: VVector(100, 200, 300) with delimiter " " returns "10.00 20.00 30.00"</para>
+            </remarks>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.VvectorUtilities.VvectorCoordsToStringUser_cm(VMS.TPS.Common.Model.API.Image,VMS.TPS.Common.Model.Types.VVector,System.String)">
+            <summary>
+            Converts a <see cref="T:VMS.TPS.Common.Model.Types.VVector"/> from DICOM coordinates to a delimited string in TPS user coordinates (cm).
+            </summary>
+            <param name="im">The <see cref="T:VMS.TPS.Common.Model.API.Image"/> reference containing the user origin and patient orientation.</param>
+            <param name="v">The <see cref="T:VMS.TPS.Common.Model.Types.VVector"/> in DICOM coordinates (mm).</param>
+            <param name="delimeter">The delimiter string to separate x, y, and z components.</param>
+            <returns>
+            A string in the format "x{delimeter}y{delimeter}z" where each value is in centimeters (cm)
+            in the TPS user coordinate system, formatted to 2 decimal places.
+            </returns>
+            <remarks>
+            <para>Input coordinate system: DICOM (IEC 61217 Patient Coordinate System), in millimeters (mm).</para>
+            <para>Output coordinate system: TPS user coordinates relative to <see cref="P:VMS.TPS.Common.Model.API.Image.UserOrigin"/>, in centimeters (cm).</para>
+            <para>Uses <see cref="T:Uclh.XRT.Esapi.Utilities.DicomConverters"/> to handle patient orientation-aware conversions.</para>
+            </remarks>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.DicomConverters.DicomToUser_x(VMS.TPS.Common.Model.API.Image,System.Double)"/>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.DicomConverters.DicomToUser_y(VMS.TPS.Common.Model.API.Image,System.Double)"/>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.DicomConverters.DicomToUser_z(VMS.TPS.Common.Model.API.Image,System.Double)"/>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.VvectorUtilities.VvectorCoordsToStringUser_cmLong(VMS.TPS.Common.Model.API.Image,VMS.TPS.Common.Model.Types.VVector,System.String)">
+            <summary>
+            Converts a <see cref="T:VMS.TPS.Common.Model.Types.VVector"/> from DICOM coordinates to a delimited string in TPS user coordinates (cm) with full precision.
+            </summary>
+            <param name="im">The <see cref="T:VMS.TPS.Common.Model.API.Image"/> reference containing the user origin and patient orientation.</param>
+            <param name="v">The <see cref="T:VMS.TPS.Common.Model.Types.VVector"/> in DICOM coordinates (mm).</param>
+            <param name="delimeter">The delimiter string to separate x, y, and z components.</param>
+            <returns>
+            A string in the format "x{delimeter}y{delimeter}z" where each value is in centimeters (cm)
+            in the TPS user coordinate system, with full double precision (no rounding).
+            </returns>
+            <remarks>
+            <para>Input coordinate system: DICOM (IEC 61217 Patient Coordinate System), in millimeters (mm).</para>
+            <para>Output coordinate system: TPS user coordinates relative to <see cref="P:VMS.TPS.Common.Model.API.Image.UserOrigin"/>, in centimeters (cm).</para>
+            <para>Unlike <see cref="M:Uclh.XRT.Esapi.Utilities.VvectorUtilities.VvectorCoordsToStringUser_cm(VMS.TPS.Common.Model.API.Image,VMS.TPS.Common.Model.Types.VVector,System.String)"/>, this method does not format to 2 decimal places.</para>
+            <para>Uses <see cref="T:Uclh.XRT.Esapi.Utilities.DicomConverters"/> to handle patient orientation-aware conversions.</para>
+            </remarks>
+            <seealso cref="M:Uclh.XRT.Esapi.Utilities.VvectorUtilities.VvectorCoordsToStringUser_cm(VMS.TPS.Common.Model.API.Image,VMS.TPS.Common.Model.Types.VVector,System.String)"/>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.VvectorUtilities.averageVVector(VMS.TPS.Common.Model.Types.VVector[])">
+            <summary>
+            Calculates the centroid (average position) of a contour defined by an array of points.
+            </summary>
+            <param name="myVVector">An array of <see cref="T:VMS.TPS.Common.Model.Types.VVector"/> points defining the contour.</param>
+            <returns>
+            A <see cref="T:VMS.TPS.Common.Model.Types.VVector"/> representing the arithmetic mean of all points in the contour.
+            </returns>
+            <remarks>
+            <para>Units: Same as input (typically millimeters in DICOM coordinates).</para>
+            <para>The centroid is calculated as the arithmetic mean: (Σx/n, Σy/n, Σz/n).</para>
+            <para>For 2D contours on a plane, the z-component will be the average slice position.</para>
+            </remarks>
+            <exception cref="T:System.ArgumentNullException">Thrown when <paramref name="myVVector"/> is null.</exception>
+            <exception cref="T:System.ArgumentException">Thrown when <paramref name="myVVector"/> is empty.</exception>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.Utilities.VvectorUtilities.SameVVector(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector)">
+            <summary>
+            Determines whether two <see cref="T:VMS.TPS.Common.Model.Types.VVector"/> objects are exactly equal.
+            </summary>
+            <param name="v1">The first <see cref="T:VMS.TPS.Common.Model.Types.VVector"/> to compare.</param>
+            <param name="v2">The second <see cref="T:VMS.TPS.Common.Model.Types.VVector"/> to compare.</param>
+            <returns>
+            <c>true</c> if all three components (x, y, z) are exactly equal; otherwise, <c>false</c>.
+            </returns>
+            <remarks>
+            <para>This method performs exact equality comparison (==) on all three components.</para>
+            <para>For floating-point comparisons with tolerance, consider using 
+            <see cref="M:VMS.TPS.Common.Model.Types.VVector.Distance(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector)"/> and checking against a threshold instead.</para>
+            </remarks>
+            <seealso cref="M:VMS.TPS.Common.Model.Types.VVector.Distance(VMS.TPS.Common.Model.Types.VVector,VMS.TPS.Common.Model.Types.VVector)"/>
+        </member>
+    </members>
+</doc>
