@@ -8,6 +8,8 @@ namespace BreastSurrogate.Core.Apertures
     /// </summary>
     public sealed class JawAperture
     {
+        private const double BoundaryToleranceMm = 1e-9;
+
         public JawAperture(VRect<double> bounds)
         {
             ValidateFinite(bounds.X1, "bounds", "X1");
@@ -45,10 +47,10 @@ namespace BreastSurrogate.Core.Apertures
                 throw new ArgumentOutOfRangeException("yBld", "BLD coordinate must be finite.");
             }
 
-            return xBld >= Bounds.X1
-                && xBld <= Bounds.X2
-                && yBld >= Bounds.Y1
-                && yBld <= Bounds.Y2;
+            return xBld >= Bounds.X1 - BoundaryToleranceMm
+                && xBld <= Bounds.X2 + BoundaryToleranceMm
+                && yBld >= Bounds.Y1 - BoundaryToleranceMm
+                && yBld <= Bounds.Y2 + BoundaryToleranceMm;
         }
 
         private static void ValidateFinite(double value, string parameterName, string coordinateName)

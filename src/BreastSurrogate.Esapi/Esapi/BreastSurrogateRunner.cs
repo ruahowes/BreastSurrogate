@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Windows;
 using BreastSurrogate.Core.Apertures;
 using BreastSurrogate.Core.Geometry;
@@ -14,11 +15,13 @@ using VMS.TPS.Common.Model.Types;
 namespace BreastSurrogate.Esapi.Esapi
 {
     /// <summary>
-    /// Read-only Phase 4 shell for inspecting the active Eclipse context.
+    /// Read-only development runner for inspecting beam geometry and structure sampling.
     /// </summary>
     public sealed class BreastSurrogateRunner
     {
         private const string ApplicationName = "BreastSurrogate";
+        private const string Phase6RequiredLungId = "IPS LUNG";
+        private const string Phase6OptionalHeartId = "Heart";
         private const string UnknownPatientId = "NoPatient";
 
         private readonly string _logDirectory;
@@ -87,8 +90,58 @@ namespace BreastSurrogate.Esapi.Esapi
                     LogCoreGeometry(logger, aperture, beamIndex);
                 }
 
+                Structure ipsilateralLung = context.ss.Structures.FirstOrDefault(
+                    structure => string.Equals(
+                        structure.Id,
+                        Phase6RequiredLungId,
+                        StringComparison.OrdinalIgnoreCase));
+                if (ipsilateralLung == null)
+                {
+                    ReportFailure(
+                        logger,
+                        stopwatch,
+                        patientId,
+                        "Phase 6 requires a structure with ID '" + Phase6RequiredLungId + "'.");
+                    return;
+                }
+
+                Structure heart = context.ss.Structures.FirstOrDefault(
+                    structure => string.Equals(
+                        structure.Id,
+                        Phase6OptionalHeartId,
+                        StringComparison.OrdinalIgnoreCase));
+                logger.Log("Phase6.IpsilateralLungStatus", "Present");
+                logger.Log(
+                    "Phase6.HeartStatus",
+                    heart == null ? "Not present (optional)" : "Present");
+
+                var targetStructures = new List<Structure> { ipsilateralLung };
+                if (heart != null)
+                {
+                    targetStructures.Add(heart);
+                }
+
+                var sampler = new StructureVoxelSampler();
+                var samplingResults = new List<StructureVoxelSamplingResult>();
+                for (int structureIndex = 0;
+                    structureIndex < targetStructures.Count;
+                    structureIndex++)
+                {
+                    Structure structure = targetStructures[structureIndex];
+                    StructureVoxelSamplingResult samplingResult = sampler.Sample(
+                        structure,
+                        context.im);
+                    samplingResults.Add(samplingResult);
+                    LogStructureSampling(
+                        logger,
+                        structure,
+                        context.im,
+                        samplingResult,
+                        structureIndex);
+                }
+
                 stopwatch.Stop();
-                logger.LogTiming("Phase5BeamGeometryInspection", stopwatch.ElapsedMilliseconds);
+                logger.Log("Phase6.TotalElapsedMs", stopwatch.ElapsedMilliseconds);
                 logger.Log("Status", "Success");
 
                 string logError = TryWriteLog(logger, patientId);
@@ -105,15 +158,18 @@ namespace BreastSurrogate.Esapi.Esapi
                 }
 
                 MessageBox.Show(
-                    "BreastSurrogate Phase 5 jaw-geometry validation completed for "
-                    + treatmentBeams.Count
-                    + " treatment beam(s).\n\nDebug log directory:\n"
-                    + _logDirectory,
+                    FormatSamplingSummary(samplingResults, heart == null)
+                        + "\nDebug log directory:\n"
+                        + _logDirectory,
                     ApplicationName,
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
             }
             catch (UnsupportedBeamGeometryException exception)
+            {
+                ReportFailure(logger, stopwatch, patientId, exception.Message);
+            }
+            catch (StructureVoxelSamplingException exception)
             {
                 ReportFailure(logger, stopwatch, patientId, exception.Message);
             }
@@ -123,7 +179,7 @@ namespace BreastSurrogate.Esapi.Esapi
                 logger.Log("Status", "Unexpected failure");
                 logger.Log("ExceptionType", exception.GetType().FullName);
                 logger.Log("ExceptionMessage", exception.Message);
-                logger.LogTiming("Phase5BeamGeometryInspection", stopwatch.ElapsedMilliseconds);
+                logger.Log("Phase6.TotalElapsedMs", stopwatch.ElapsedMilliseconds);
 
                 string logError = TryWriteLog(logger, patientId);
                 string logMessage = logError == null
@@ -306,6 +362,81 @@ namespace BreastSurrogate.Esapi.Esapi
             logger.Log(prefix + "InsideJaws", aperture.Jaws.Contains(projected.XBld, projected.YBld));
         }
 
+        private static void LogStructureSampling(
+            Logger logger,
+            Structure structure,
+            Image image,
+            StructureVoxelSamplingResult result,
+            int structureIndex)
+        {
+            string prefix = "Phase6.StructureSampling["
+                + structureIndex.ToString(CultureInfo.InvariantCulture)
+                + "].";
+            var bounds = structure.MeshGeometry.Bounds;
+
+            logger.Log(prefix + "StructureId", result.StructureId);
+            logger.Log(prefix + "ImageSizeVoxels", FormatDimensions(image.XSize, image.YSize, image.ZSize));
+            logger.Log(prefix + "ImageResolutionMm", FormatDimensions(image.XRes, image.YRes, image.ZRes));
+            logger.Log(
+                prefix + "MeshBoundsDicomMm",
+                "(X=" + FormatDouble(bounds.X)
+                + ", Y=" + FormatDouble(bounds.Y)
+                + ", Z=" + FormatDouble(bounds.Z)
+                + ", SizeX=" + FormatDouble(bounds.SizeX)
+                + ", SizeY=" + FormatDouble(bounds.SizeY)
+                + ", SizeZ=" + FormatDouble(bounds.SizeZ) + ")");
+            logger.Log(
+                prefix + "VoxelIndexRangeInclusive",
+                "(X=" + FormatIndexRange(result.MinimumXIndex, result.MaximumXIndex)
+                + ", Y=" + FormatIndexRange(result.MinimumYIndex, result.MaximumYIndex)
+                + ", Z=" + FormatIndexRange(result.MinimumZIndex, result.MaximumZIndex) + ")");
+            logger.Log(prefix + "SamplingStride", 1);
+            logger.Log(prefix + "SamplingMethod", "Full-resolution X-axis segment profiles");
+            logger.Log(prefix + "CandidateVoxelCount", result.CandidateVoxelCount);
+            logger.Log(
+                prefix + "StructureMembershipQueryCount",
+                result.StructureMembershipQueryCount);
+            logger.Log(prefix + "InsideStructureVoxelCount", result.InsideStructureVoxelCount);
+            logger.Log(prefix + "VoxelVolumeMm3", FormatDouble(result.VoxelVolumeCubicMillimetres));
+            logger.Log(
+                prefix + "SampledStructureVolumeCm3",
+                FormatDouble(result.SampledStructureVolumeCubicCentimetres));
+            logger.Log(
+                prefix + "EsapiStructureVolumeCm3",
+                FormatDouble(result.EsapiStructureVolumeCubicCentimetres));
+            logger.LogTiming(prefix + "Elapsed", result.ElapsedMilliseconds);
+        }
+
+        private static string FormatSamplingSummary(
+            IList<StructureVoxelSamplingResult> results,
+            bool heartWasAbsent)
+        {
+            var summary = new StringBuilder();
+            summary.Append("BreastSurrogate Phase 6 sampled ");
+            summary.Append(results.Count.ToString(CultureInfo.InvariantCulture));
+            summary.Append(" structure(s).\n\n");
+
+            for (int index = 0; index < results.Count; index++)
+            {
+                StructureVoxelSamplingResult result = results[index];
+                summary.Append(result.StructureId);
+                summary.Append(": ");
+                summary.Append(result.SampledStructureVolumeCubicCentimetres.ToString("F3", CultureInfo.InvariantCulture));
+                summary.Append(" cm3 sampled; ");
+                summary.Append(result.EsapiStructureVolumeCubicCentimetres.ToString("F3", CultureInfo.InvariantCulture));
+                summary.Append(" cm3 ESAPI; ");
+                summary.Append(result.ElapsedMilliseconds.ToString(CultureInfo.InvariantCulture));
+                summary.Append(" ms\n");
+            }
+
+            if (heartWasAbsent)
+            {
+                summary.Append("\nHeart was not present; lung sampling completed normally.\n");
+            }
+
+            return summary.ToString();
+        }
+
         private void ReportFailure(
             Logger logger,
             Stopwatch stopwatch,
@@ -315,7 +446,7 @@ namespace BreastSurrogate.Esapi.Esapi
             stopwatch.Stop();
             logger.Log("Status", "Input rejected");
             logger.Log("FailureReason", message);
-            logger.LogTiming("Phase5BeamGeometryInspection", stopwatch.ElapsedMilliseconds);
+            logger.Log("Phase6.TotalElapsedMs", stopwatch.ElapsedMilliseconds);
 
             string logError = TryWriteLog(logger, patientId);
             string logMessage = logError == null
@@ -380,6 +511,13 @@ namespace BreastSurrogate.Esapi.Esapi
                 + FormatDouble(second)
                 + " x "
                 + FormatDouble(third);
+        }
+
+        private static string FormatIndexRange(int minimum, int maximum)
+        {
+            return minimum.ToString(CultureInfo.InvariantCulture)
+                + ".."
+                + maximum.ToString(CultureInfo.InvariantCulture);
         }
 
         private static string FormatDouble(double value)

@@ -321,7 +321,9 @@ For a projected point `(xBLD, yBLD)`, the point is inside the jaw opening when i
 
 The Phase 3 classifier treats the four jaw boundaries as inclusive. It requires
 finite, ordered bounds (`X1 <= X2` and `Y1 <= Y2`) and rejects invalid rectangles
-rather than silently reordering them.
+rather than silently reordering them. Containment allows a numerical boundary
+tolerance of `1e-9 mm` so floating-point projection residue does not classify a
+point mathematically on a jaw edge as outside.
 
 Jaw-only geometry is the first complete field model to be implemented and validated.
 
@@ -370,12 +372,12 @@ against a wider set of clinical plans before version 1 validation is complete.
 
 ### 12.1 Primary approach
 
-Sample the structure using the associated image voxel grid.
+Sample the structure using the associated image voxel grid. At full image
+resolution, process each `(y, z)` row as an X-axis scanline:
 
-For each candidate voxel centre:
-
-1. convert `(x, y, z)` image indices to a DICOM `VVector` using `VoxelUtilities.VoxelToVVector(...)`;
-2. use `Structure.IsPointInsideSegment(point)` to determine whether the voxel centre is inside the structure;
+1. convert the first and last candidate voxel centres to DICOM `VVector` values;
+2. obtain all row membership values with one documented
+   `Structure.GetSegmentProfile(start, stop, BitArray)` call;
 3. for structure voxels, test the point against each selected beam aperture;
 4. increment:
    - total structure sample count;
@@ -386,6 +388,21 @@ For each candidate voxel centre:
 
 Sampling should be restricted to the structure's mesh-geometry bounding box rather than the full image.
 
+The Phase 6 ESAPI sampler converts both DICOM endpoints of each mesh-bound
+axis with the shared `VoxelUtilities.DicomToVoxel_*` helpers. Because those
+helpers return truncated integer indices, the candidate range is expanded by
+one voxel on each side and then clamped to the valid image dimensions. This
+prevents a contour-edge voxel from being omitted due to truncation while
+retaining the bounding-box performance benefit.
+
+For Phase 6 Eclipse integration, structure ID matching is case-insensitive.
+`IPS LUNG` is required and `Heart` is optional. When `Heart` is absent, lung
+sampling continues normally and the absence is recorded in the log.
+
+The initial per-voxel `Structure.IsPointInsideSegment` implementation remains
+the Eclipse validation reference. Segment-profile counts must agree with those
+reference counts before the batched method is accepted.
+
 ### 12.2 Sample weighting
 
 All image voxels in a given image have the same voxel volume:
@@ -394,10 +411,15 @@ All image voxels in a given image have the same voxel volume:
 V_{voxel}=XRes \times YRes \times ZRes
 \]
 
-Therefore, for full-resolution voxel-centre sampling the voxel volume cancels in the percentage:
+Phase 6 showed close agreement between sampled and ESAPI-reported structure
+volumes on the initial full lung and heart. The calculation will therefore use
+the ESAPI `Structure.Volume` value in cubic centimetres as the denominator,
+while the sampled in-field voxel volume supplies the numerator:
 
 \[
-gIF = 100 \times \frac{N_{infield}}{N_{structure}}
+gIF = 100 \times
+\frac{N_{infield} \times V_{voxel}}
+{1000 \times V_{ESAPI}}
 \]
 
 The sampled structure volume can also be calculated:
@@ -410,9 +432,16 @@ and compared with `Structure.Volume` as a useful diagnostic.
 
 ### 12.3 Performance
 
-Start with full-resolution image-voxel sampling for correctness.
+Retain full-resolution image-voxel sampling for correctness, but batch
+structure-membership queries into X-axis segment profiles. If runtime remains
+excessive during the jaw-only calculation, the next optimisation is to identify
+the portions of each scanline that intersect the union of the selected jaw
+apertures and request structure membership only over those portions. Any such
+clipping must use the divergent 3D aperture classifiers; a fixed rectangular
+patient-space crop would not be geometrically valid.
 
-If runtime is excessive, add a configurable integer stride or equivalent coarser sampling only after the full-resolution result exists as a reference. Any default reduction in resolution must be justified by a convergence study.
+A configurable stride or other coarser sampling remains deferred until it has
+been compared with the full-resolution reference in a convergence study.
 
 ## 13. Result model
 

@@ -41,6 +41,29 @@ namespace BreastSurrogate.Core.Tests.Apertures
         }
 
         [TestMethod]
+        public void ContainsIncludesFloatingPointResidueAtZeroJawBoundaries()
+        {
+            const double projectionResidueMm = 2.6e-14;
+            JawAperture upperZeroJaw = new JawAperture(new VRect<double>(-120.0, -98.0, 0.0, 83.0));
+            JawAperture lowerZeroJaw = new JawAperture(new VRect<double>(0.0, -99.0, 120.0, 91.0));
+
+            Assert.IsTrue(
+                upperZeroJaw.Contains(projectionResidueMm, 0.0),
+                "Positive projection residue at an X2=0 boundary should be included.");
+            Assert.IsTrue(
+                lowerZeroJaw.Contains(-projectionResidueMm, 0.0),
+                "Negative projection residue at an X1=0 boundary should be included.");
+        }
+
+        [TestMethod]
+        public void ContainsDoesNotIncludePointMateriallyBeyondBoundary()
+        {
+            JawAperture jaws = CreateJaws();
+
+            Assert.IsFalse(jaws.Contains(20.000001, 0.0));
+        }
+
+        [TestMethod]
         public void ConstructorRejectsReversedBounds()
         {
             Assert.ThrowsException<ArgumentException>(

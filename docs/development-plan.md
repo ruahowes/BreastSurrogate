@@ -284,9 +284,10 @@ Calculate the number of voxel centres inside an ESAPI structure.
 1. obtain `Structure.MeshGeometry.Bounds`;
 2. convert the bounding limits to image voxel-index ranges;
 3. clamp ranges to valid image indices;
-4. loop only through those voxels;
-5. convert each voxel index to DICOM `VVector` with `VoxelUtilities.VoxelToVVector(...)`;
-6. call `Structure.IsPointInsideSegment(point)`;
+4. loop through each `(y, z)` row in that range;
+5. convert the first and last X voxel centres to DICOM `VVector` values;
+6. obtain the full-resolution row membership values with one
+   `Structure.GetSegmentProfile(start, stop, BitArray)` call;
 7. emit/count only structure points.
 
 Start at full image resolution.
@@ -299,6 +300,8 @@ Log:
 - structure bounding box;
 - voxel index range;
 - candidate voxel count;
+- structure-membership query count;
+- sampling method;
 - inside-structure count;
 - calculated sampled volume;
 - `Structure.Volume`;
@@ -308,11 +311,11 @@ Log:
 
 Run on:
 
-- Structure named "test" initially
+- required structure ID `IPS LUNG`;
+- optional structure ID `Heart`, when present.
 
-Once validated, replace with:
-- ipsilateral lung;
-- heart;
+Structure ID matching is case-insensitive. A missing `IPS LUNG` is an input
+error; a missing `Heart` is logged but does not prevent lung sampling.
 
 The sampled volume does not need to match ESAPI volume exactly, but it should be plausibly close and stable. Large discrepancies must be investigated before continuing.
 
@@ -594,4 +597,3 @@ Version 1 is complete when:
 - sampling behaviour/runtime has been characterised;
 - debug logging provides sufficient evidence to diagnose geometry problems;
 - a clinical validation dataset has been defined or collected before any surrogate thresholds are used operationally.
-

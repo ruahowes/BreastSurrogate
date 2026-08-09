@@ -7,8 +7,8 @@ Library Assembly: Uclh.XRT.Library.dll
 Library Version:  1.0.0.2
 
 User: RUAHOWES
-Generated: 2026-08-09 12:35:13
-Total entries: 111
+Generated: 2026-08-09 13:17:10
+Total entries: 144
 ======================================================================
 
 BreastSurrogateRunner Run Starting Method
@@ -41,6 +41,8 @@ BreastSurrogateRunner LogBeam Beam[0].ControlPoint[1].PatientSupportAngleDeg 0
 BreastSurrogateRunner LogBeam Beam[0].ControlPoint[1].JawPositionsBldMm (X1=-120, Y1=-98, X2=0, Y2=83)
 BreastSurrogateRunner LogBeam Beam[0].ControlPoint[1].LeafArrayDimensions 2 x 60
 BreastSurrogateRunner LogCoreGeometry Beam[0].Core.StaticGeometryValidation Supported
+BreastSurrogateRunner LogCoreGeometry Beam[0].Core.SelectedControlPointIndex 0
+BreastSurrogateRunner LogCoreGeometry Beam[0].Core.ReferenceSuperiorDicom (0, 0, 1)
 BreastSurrogateRunner LogCoreGeometry Beam[0].Core.AngleToleranceDeg 0.01
 BreastSurrogateRunner LogCoreGeometry Beam[0].Core.PositionToleranceMm 0.01
 BreastSurrogateRunner LogCoreGeometry Beam[0].Core.WAxisSourceToIsocentre (-0.7880107536067219, -0.61566147532565829, -1.2079226507921702E-16)
@@ -52,7 +54,7 @@ BreastSurrogateRunner LogProjectionDebug Beam[0].Core.DebugPoint[Isocentre].Proj
 BreastSurrogateRunner LogProjectionDebug Beam[0].Core.DebugPoint[Isocentre].ProjectedDicomPointMm (87.748012294912314, -295.83164008825003, 6)
 BreastSurrogateRunner LogProjectionDebug Beam[0].Core.DebugPoint[Isocentre].XBldMm 2.5924080415482268E-14
 BreastSurrogateRunner LogProjectionDebug Beam[0].Core.DebugPoint[Isocentre].YBldMm 4.1059709675344332E-15
-BreastSurrogateRunner LogProjectionDebug Beam[0].Core.DebugPoint[Isocentre].InsideJaws False
+BreastSurrogateRunner LogProjectionDebug Beam[0].Core.DebugPoint[Isocentre].InsideJaws True
 BreastSurrogateRunner LogProjectionDebug Beam[0].Core.DebugPoint[DicomPlus10X].DicomPointMm (97.748012294912272, -295.83164008825003, 6)
 BreastSurrogateRunner LogProjectionDebug Beam[0].Core.DebugPoint[DicomPlus10X].ProjectionParameter 1.0079426968413032
 BreastSurrogateRunner LogProjectionDebug Beam[0].Core.DebugPoint[DicomPlus10X].ProjectedDicomPointMm (91.568508739740309, -300.72165254363125, 5.9999999999999991)
@@ -91,6 +93,8 @@ BreastSurrogateRunner LogBeam Beam[1].ControlPoint[1].PatientSupportAngleDeg 0
 BreastSurrogateRunner LogBeam Beam[1].ControlPoint[1].JawPositionsBldMm (X1=0, Y1=-99, X2=120, Y2=91)
 BreastSurrogateRunner LogBeam Beam[1].ControlPoint[1].LeafArrayDimensions 2 x 60
 BreastSurrogateRunner LogCoreGeometry Beam[1].Core.StaticGeometryValidation Supported
+BreastSurrogateRunner LogCoreGeometry Beam[1].Core.SelectedControlPointIndex 0
+BreastSurrogateRunner LogCoreGeometry Beam[1].Core.ReferenceSuperiorDicom (0, 0, 1)
 BreastSurrogateRunner LogCoreGeometry Beam[1].Core.AngleToleranceDeg 0.01
 BreastSurrogateRunner LogCoreGeometry Beam[1].Core.PositionToleranceMm 0.01
 BreastSurrogateRunner LogCoreGeometry Beam[1].Core.WAxisSourceToIsocentre (0.78801075360672168, 0.61566147532565851, -1.2079226507921702E-16)
@@ -121,11 +125,41 @@ BreastSurrogateRunner LogProjectionDebug Beam[1].Core.DebugPoint[DicomPlus10Z].P
 BreastSurrogateRunner LogProjectionDebug Beam[1].Core.DebugPoint[DicomPlus10Z].XBldMm 1.5643446504023268
 BreastSurrogateRunner LogProjectionDebug Beam[1].Core.DebugPoint[DicomPlus10Z].YBldMm 9.876883405951375
 BreastSurrogateRunner LogProjectionDebug Beam[1].Core.DebugPoint[DicomPlus10Z].InsideJaws True
+BreastSurrogateRunner Run Phase6.IpsilateralLungStatus Present
+BreastSurrogateRunner Run Phase6.HeartStatus Present
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[0].StructureId IPS LUNG
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[0].ImageSizeVoxels 512 x 512 x 184
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[0].ImageResolutionMm 1.171875 x 1.171875 x 2
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[0].MeshBoundsDicomMm (X=4.6875, Y=-351.97395324707031, Z=-114.31578826904297, SizeX=117.05728149414063, SizeY=159.02265930175781, SizeZ=206.63158416748047)
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[0].VoxelIndexRangeInclusive (X=258..360, Y=156..294, Z=29..135)
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[0].SamplingStride 1
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[0].SamplingMethod Full-resolution X-axis segment profiles
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[0].CandidateVoxelCount 1531919
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[0].StructureMembershipQueryCount 14873
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[0].InsideStructureVoxelCount 461157
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[0].VoxelVolumeMm3 2.74658203125
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[0].SampledStructureVolumeCm3 1266.6055297851563
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[0].EsapiStructureVolumeCm3 1268.6945746420822
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[1].StructureId Heart
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[1].ImageSizeVoxels 512 x 512 x 184
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[1].ImageResolutionMm 1.171875 x 1.171875 x 2
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[1].MeshBoundsDicomMm (X=-38.120391845703125, Y=-346.63542175292969, Z=-106.33766174316406, SizeX=124.31829833984375, SizeY=102.08332824707031, SizeZ=97.333740234375)
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[1].VoxelIndexRangeInclusive (X=221..330, Y=160..250, Z=33..84)
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[1].SamplingStride 1
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[1].SamplingMethod Full-resolution X-axis segment profiles
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[1].CandidateVoxelCount 520520
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[1].StructureMembershipQueryCount 4732
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[1].InsideStructureVoxelCount 193273
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[1].VoxelVolumeMm3 2.74658203125
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[1].SampledStructureVolumeCm3 530.84014892578125
+BreastSurrogateRunner LogStructureSampling Phase6.StructureSampling[1].EsapiStructureVolumeCm3 528.78099872465998
+BreastSurrogateRunner Run Phase6.TotalElapsedMs 1259
 BreastSurrogateRunner Run Status Success
 
 ======================================================================
 TIMING SUMMARY
 ======================================================================
-Total execution time: 121.0ms
+Total execution time: 878.0ms
 
-Phase5BeamGeometryInspection: 121.0ms (100.0%)
+Phase6.StructureSampling[0].Elapsed: 676.0ms (77.0%)
+Phase6.StructureSampling[1].Elapsed: 202.0ms (23.0%)
