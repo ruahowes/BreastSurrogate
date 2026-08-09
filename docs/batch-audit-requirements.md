@@ -3,6 +3,9 @@
 **Status:** Agreed initial requirements for the future Phase 12 standalone executable  
 **Safety:** Read-only ESAPI operation; no patient, course, plan, structure or dose modification
 
+Implementation sequencing and completion checklists are maintained in
+`docs/phase12-implementation-plan.md`.
+
 ## 1. Purpose
 
 Create a patient-level audit dataset that relates:

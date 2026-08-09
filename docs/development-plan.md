@@ -573,6 +573,11 @@ Use `docs/batch-audit-requirements.md` as the detailed requirements authority
 for course/plan discovery, configurable DVH metrics, legacy structure-derived
 metrics, provenance and row-level failure behavior.
 
+Use `docs/phase12-implementation-plan.md` as the trackable implementation
+sequence. It divides this phase into milestones 12A-12H covering the structured
+calculation boundary, selectors, standalone host, I/O, discovery, metrics,
+fault-isolated orchestration and hospital validation.
+
 ### Input and execution
 
 Use an explicit input table containing at minimum:

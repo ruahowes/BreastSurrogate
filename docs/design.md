@@ -59,7 +59,10 @@ These extra values are primarily for verification and debugging.
 
 ## 4. Solution architecture
 
-The solution will contain two production projects and one test project.
+The initial interactive implementation contains two production projects and
+one test project. Phase 12 adds a third production project,
+`BreastSurrogate.Batch`, plus tests for its ESAPI-independent discovery,
+configuration and export logic.
 
 ```text
 BreastSurrogate/
@@ -656,6 +659,11 @@ PPHYS/PHYS plan; DVH metrics come from the reviewed planning-course plan. A
 reviewed plan with no isocentre or more than one distinct isocentre is
 unsupported for DVH extraction. Each independent calculation records an
 unavailable status on failure so the row and remaining batch are retained.
+
+The implementation is divided into independently testable milestones in
+`docs/phase12-implementation-plan.md`. The first milestone extracts a
+presentation-free structured calculation service from `BreastSurrogateRunner`;
+the standalone executable must not scrape message-box text or log output.
 
 The reviewed-plan DVH calculation resolves `IpsilateralLung` semantically in
 that plan's own structure set. It prefers `IPS LUNG`; otherwise it applies the
