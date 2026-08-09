@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildToolsPath)\Microsoft.Common.props" Condition="Exists('$(MSBuildToolsPath)\Microsoft.Common.props')" />
+  <Import Project="$(MSBuildProjectExtensionsPath)\$(MSBuildProjectFile).nuget.g.props" Condition="Exists('$(MSBuildProjectExtensionsPath)\$(MSBuildProjectFile).nuget.g.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
-    <ProjectGuid>{3B707FF8-E95A-46EB-A62F-3BB1D5CC08DF}</ProjectGuid>
+    <ProjectGuid>{61E54869-F4D0-4E17-842E-43DC9DCC17EA}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>BreastSurrogate.Esapi</RootNamespace>
-    <AssemblyName>BreastSurrogate.esapi</AssemblyName>
+    <RootNamespace>BreastSurrogate.Esapi.Tests</RootNamespace>
+    <AssemblyName>BreastSurrogate.Esapi.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <TargetFrameworkProfile />
     <FileAlignment>512</FileAlignment>
     <LangVersion>6</LangVersion>
-    <ProjectTypeGuids>{60DC8134-EBA5-43B8-BCC9-BB4BC16C2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <IsTestProject>true</IsTestProject>
+    <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
     <DebugSymbols>true</DebugSymbols>
@@ -35,49 +37,48 @@
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="PresentationCore" />
-    <Reference Include="PresentationFramework" />
+    <Reference Include="Microsoft.VisualStudio.TestPlatform.TestFramework">
+      <HintPath>$(NuGetPackageRoot)mstest.testframework\3.6.4\lib\net462\Microsoft.VisualStudio.TestPlatform.TestFramework.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.TestPlatform.TestFramework.Extensions">
+      <HintPath>$(NuGetPackageRoot)mstest.testframework\3.6.4\lib\net462\Microsoft.VisualStudio.TestPlatform.TestFramework.Extensions.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Xml" />
-    <Reference Include="System.Xaml">
-      <RequiredTargetFramework>4.0</RequiredTargetFramework>
-    </Reference>
-    <Reference Include="WindowsBase" />
     <Reference Include="Uclh.XRT.Library">
       <HintPath>..\..\..\VMS.TPS\Uclh.XRT.Library.dll</HintPath>
-      <Private>False</Private>
+      <Private>True</Private>
     </Reference>
     <Reference Include="VMS.TPS.Common.Model.API">
       <HintPath>..\..\..\VMS.TPS\VMS.TPS.Common.Model.API.dll</HintPath>
-      <Private>False</Private>
+      <Private>True</Private>
     </Reference>
     <Reference Include="VMS.TPS.Common.Model.Types">
       <HintPath>..\..\..\VMS.TPS\VMS.TPS.Common.Model.Types.dll</HintPath>
-      <Private>False</Private>
+      <Private>True</Private>
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Esapi\BreastSurrogateCalculationResult.cs" />
-    <Compile Include="Esapi\BreastSurrogateCalculationService.cs" />
-    <Compile Include="Esapi\BreastSurrogateRunner.cs" />
-    <Compile Include="Esapi\EsapiBeamGeometryFactory.cs" />
-    <Compile Include="Esapi\IpsilateralLungSelectionException.cs" />
-    <Compile Include="Esapi\IpsilateralLungSelectionResult.cs" />
-    <Compile Include="Esapi\IpsilateralLungSelector.cs" />
-    <Compile Include="Esapi\StructureVoxelSampler.cs" />
-    <Compile Include="Esapi\StructureVoxelSamplingException.cs" />
-    <Compile Include="Esapi\StructureVoxelSamplingResult.cs" />
-    <Compile Include="Esapi\SurrogateMetricResult.cs" />
-    <Compile Include="Esapi\UnsupportedBeamGeometryException.cs" />
+    <Compile Include="Calculation\BreastSurrogateCalculationResultTests.cs" />
+    <Compile Include="Calculation\SurrogateMetricResultTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Script.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\BreastSurrogate.Core\BreastSurrogate.Core.csproj">
+    <ProjectReference Include="..\..\src\BreastSurrogate.Core\BreastSurrogate.Core.csproj">
       <Project>{D36C6372-1B7B-4A35-9329-D605E0DBD836}</Project>
       <Name>BreastSurrogate.Core</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\src\BreastSurrogate.Esapi\BreastSurrogate.Esapi.csproj">
+      <Project>{3B707FF8-E95A-46EB-A62F-3BB1D5CC08DF}</Project>
+      <Name>BreastSurrogate.Esapi</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.6.4" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.6.4" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

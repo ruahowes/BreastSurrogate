@@ -578,6 +578,10 @@ sequence. It divides this phase into milestones 12A-12H covering the structured
 calculation boundary, selectors, standalone host, I/O, discovery, metrics,
 fault-isolated orchestration and hospital validation.
 
+**Progress:** Milestone 12A is implemented with automated tests. Its final
+Eclipse percentage/log regression check remains pending before 12A is marked
+fully accepted and work begins on 12B.
+
 ### Input and execution
 
 Use an explicit input table containing at minimum:

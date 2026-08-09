@@ -1,6 +1,6 @@
 # Phase 12 standalone batch audit implementation plan
 
-**Status:** Planned; implementation not started  
+**Status:** In progress; milestone 12A implemented, Eclipse regression check pending
 **Requirements authority:** `docs/batch-audit-requirements.md`  
 **Safety:** Read-only ESAPI operation; sequential patient access; no ARIA modification
 
@@ -74,7 +74,7 @@ No additional generic application/context wrapper is currently required.
 
 ## 3. Milestone 12A — Structured surrogate service
 
-**Status:** Not started
+**Status:** Implemented; Eclipse regression check pending
 
 Refactor `BreastSurrogateRunner` so calculation and presentation are separate.
 Add a presentation-free service with a boundary conceptually equivalent to:
@@ -99,19 +99,27 @@ geometric metrics unavailable because they share that dependency.
 
 ### Tasks
 
-- [ ] Define structured calculation outcome/result contracts.
-- [ ] Extract beam discovery and geometry construction from the UI workflow.
-- [ ] Calculate lung and Heart outcomes independently after shared geometry is valid.
-- [ ] Move formatting, message boxes and file logging behind the interactive runner.
-- [ ] Preserve existing diagnostic values and exception details.
-- [ ] Add tests for all new ESAPI-independent result/status behavior.
-- [ ] Run the complete Core test suite and build the solution.
+- [x] Define structured calculation outcome/result contracts.
+- [x] Extract beam discovery and geometry construction from the UI workflow.
+- [x] Calculate lung and Heart outcomes independently after shared geometry is valid.
+- [x] Move formatting, message boxes and file logging behind the interactive runner.
+- [x] Preserve existing diagnostic values and exception details.
+- [x] Add tests for all new ESAPI-independent result/status behavior.
+- [x] Run the complete Core test suite and build the solution.
 - [ ] Confirm unchanged Eclipse percentages and equivalent logs.
 
 ### Acceptance
 
 Both Eclipse and a future batch host can consume the same structured
 calculation without UI or log parsing, and interactive results do not regress.
+
+Implementation added `BreastSurrogateCalculationService`, immutable structured
+calculation/metric results and a separate ESAPI-contract test project. The
+service contains no message-box, logger or file-output dependency and returns
+no persistent ESAPI API object. Automated validation currently passes 57 Core
+tests and 6 structured-result tests. Final acceptance remains pending until a
+representative Eclipse run confirms unchanged percentages and equivalent
+diagnostic content.
 
 ## 4. Milestone 12B — Reusable structure selectors
 
