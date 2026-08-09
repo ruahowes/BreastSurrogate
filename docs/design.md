@@ -641,16 +641,38 @@ The audit dataset is intended to combine:
 - raw geometric gILF/gHIF;
 - legacy ILF/HIF calculated from explicitly configured structures in the
   structure set;
-- lung and heart clinical-goal/DVH metrics from an explicitly identified final
-  clinical plan;
+- lung and heart clinical-goal/DVH metrics from the explicitly identified
+  reviewed planning-course copy of the final clinical plan;
 - plan, beam, structure and calculation diagnostics needed to interpret a
   failure or discrepancy.
 
-Structure identifiers, the relationship between surrogate and final plans,
-laterality rules, DVH presentation, clinical-goal definitions and output schema
-must be configured before implementing the audit; they must not be inferred
-silently. Batch outputs and logs must be stored in an appropriately controlled
-location because they contain patient identifiers.
+Detailed discovery, metric configuration and provenance requirements are
+maintained in `docs/batch-audit-requirements.md`. In summary, the completed
+clinical course is excluded. A planning-course candidate has `PLANNING` in its
+ID and contains both a rejected plan and exactly one reviewed external plan.
+More than one reviewed plan prevents clinical-plan metric calculation for that
+patient row. Raw geometry and legacy structures come from a uniquely resolved
+PPHYS/PHYS plan; DVH metrics come from the reviewed planning-course plan. A
+reviewed plan with no isocentre or more than one distinct isocentre is
+unsupported for DVH extraction. Each independent calculation records an
+unavailable status on failure so the row and remaining batch are retained.
+
+The reviewed-plan DVH calculation resolves `IpsilateralLung` semantically in
+that plan's own structure set. It prefers `IPS LUNG`; otherwise it applies the
+same recognized whole-lung alias and centre-to-isocentre selection using the
+reviewed plan's own single treatment isocentre. Physics-plan ESAPI `Structure`
+objects must not be reused for reviewed-plan DVH queries.
+
+The batch patient list is CSV and general configuration is JSON. Supported DVH
+requests are mean dose, volume at absolute dose in percent or cubic centimetres,
+and dose at absolute or relative volume. Legacy numerator structures are found
+by IDs containing `ILF` or `HIF`; their denominators are the selected
+ipsilateral lung and Heart respectively. Ambiguous structures or plans are
+reported explicitly rather than selected heuristically. Heart selection is an
+exception with a defined rule: exact `Heart` first, then the unique closest
+normalized string among IDs containing `Heart`. Batch outputs and logs are
+patient-identifiable and remain on the hospital network in the same or a
+similarly controlled directory.
 
 For true unattended use, calculation and presentation will need separating so
 that a reusable service returns structured results without displaying message
@@ -700,12 +722,8 @@ The script must not silently fall back to an approximation.
 The following should be resolved during development rather than guessed by Codex:
 
 1. acceptable static-angle/position tolerances;
-2. legacy ILF/HIF source-structure identifiers and formulae for the audit;
-3. mapping from each surrogate plan to its final clinical plan;
-4. lung/heart laterality, clinical-goal and DVH endpoint definitions;
-5. controlled batch input/output schema and storage location;
-6. eventual automatic beam/structure selection rules;
-7. clinical thresholds for gILF/gHIF.
+2. eventual automatic beam/structure selection rules;
+3. clinical thresholds for gILF/gHIF.
 
 ## 19. Future research: geometric tangent candidate search
 

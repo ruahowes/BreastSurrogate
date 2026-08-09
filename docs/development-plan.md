@@ -569,40 +569,57 @@ Build a separate read-only executable that creates a comparison dataset for
 the geometric surrogate, legacy structure-derived surrogate and final clinical
 lung/heart metrics.
 
+Use `docs/batch-audit-requirements.md` as the detailed requirements authority
+for course/plan discovery, configurable DVH metrics, legacy structure-derived
+metrics, provenance and row-level failure behavior.
+
 ### Input and execution
 
 Use an explicit input table containing at minimum:
 
 - patient ID;
-- course ID;
-- plan ID;
-- any distinct final-clinical-plan ID required by the audit design.
+- optional exact planning-course override;
+- optional explicit PPHYS/PHYS course/plan overrides.
 
 For each row, the standalone ESAPI host should:
 
 1. open the patient using the supported ESAPI application API;
-2. locate the exact course and plan IDs, rejecting missing or duplicate matches;
-3. construct `EsapiContext(patient, plan)`;
-4. invoke a presentation-free BreastSurrogate calculation service;
-5. calculate legacy ILF/HIF only from explicitly configured source structures;
-6. extract a predefined set of lung/heart clinical-goal and DVH metrics from
-   the explicitly selected final plan;
-7. record structured outputs, warnings and failures;
-8. close the patient before processing the next row.
+2. locate a course whose ID contains `PLANNING` and which contains at least one
+   rejected plan and exactly one reviewed external plan; use that reviewed plan
+   for DVH extraction without using the completed clinical course; if multiple
+   reviewed plans remain, mark clinical metrics unavailable without stopping
+   the row or batch;
+3. locate the configured PPHYS/PHYS course and plan for geometry and legacy
+   structure-derived ILF/HIF, rejecting missing or duplicate matches;
+4. construct `EsapiContext(patient, physicsPlan)`;
+5. invoke a presentation-free BreastSurrogate calculation service;
+6. calculate legacy ILF/HIF from unique non-empty structures whose IDs contain
+   `ILF` or `HIF`, using ipsilateral lung or Heart volume respectively as the
+   denominator;
+7. extract a config-defined set of lung/heart clinical-goal and DVH metrics from
+   the explicitly selected reviewed planning-course copy of the final plan;
+8. record structured outputs, warnings and failures, retaining the row when
+   any individual gILF, gHIF, ILF, HIF or DVH calculation is unavailable;
+9. close the patient before processing the next row.
 
 The executable remains sequential unless ESAPI documentation explicitly
 supports another execution model. It must not call `BeginModifications()` or
 create/alter structures, plans or dose.
 
-Before implementation, define:
+Initial audit configuration:
 
-- legacy ILF/HIF structure identifiers and formulae;
-- ipsilateral-lung and heart selection/laterality rules;
-- how the surrogate plan maps to the final clinical plan;
-- prescribed dose presentation and DVH binning;
-- exact clinical-goal/DVH endpoints;
-- CSV/JSON schema, units, missing-data representation and controlled output
-  location.
+- select Heart from IDs containing `Heart`, preferring exact `Heart` and then
+  the unique closest normalized string match;
+- calculate ipsilateral-lung `V8Gy (%)`, ipsilateral-lung `V12Gy (%)` and Heart
+  `Dmean (Gy)`;
+- output patient ID, physics and reviewed plan IDs, prescribed fractions,
+  selected lung/Heart/ILF/HIF IDs, all surrogate and DVH values, and per-metric
+  status/reason columns;
+- accept the patient list as a separate CSV and write identifiable results to
+  the log directory or a similarly controlled hospital-network directory.
+
+Validate discovery, fraction extraction, Heart selection, DVH agreement and
+partial-failure behavior on a representative cohort before routine use.
 
 ### Acceptance
 
