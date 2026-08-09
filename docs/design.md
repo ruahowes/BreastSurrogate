@@ -319,6 +319,10 @@ The projection implementation must detect invalid/degenerate cases such as a nea
 
 For a projected point `(xBLD, yBLD)`, the point is inside the jaw opening when it lies within the `VRect<double>` jaw bounds.
 
+The Phase 3 classifier treats the four jaw boundaries as inclusive. It requires
+finite, ordered bounds (`X1 <= X2` and `Y1 <= Y2`) and rejects invalid rectangles
+rather than silently reordering them.
+
 Jaw-only geometry is the first complete field model to be implemented and validated.
 
 This allows source position, divergence, gantry geometry, collimator rotation and BLD coordinate signs to be tested before MLC complexity is added.
