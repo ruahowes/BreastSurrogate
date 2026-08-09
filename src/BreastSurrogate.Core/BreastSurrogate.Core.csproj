@@ -42,6 +42,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Geometry\BeamCoordinateSystem.cs" />
+    <Compile Include="Geometry\BeamProjection.cs" />
+    <Compile Include="Geometry\ProjectedBeamPoint.cs" />
     <Compile Include="Geometry\VectorMath.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

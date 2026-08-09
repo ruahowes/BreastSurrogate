@@ -252,6 +252,29 @@ For the initial HFS, couch-zero implementation, construct an orthonormal basis o
 
 The implementation must document the chosen cross-product order and collimator rotation sign.
 
+For the Phase 2 internal mathematical convention:
+
+\[
+\hat{u}_0 = \operatorname{normalize}(\hat{s}_{superior} \times \hat{w})
+\]
+
+\[
+\hat{v}_0 = \hat{w} \times \hat{u}_0
+\]
+
+For a positive collimator angle \(\theta\), the beam-plane axes are rotated as:
+
+\[
+\hat{u} = \cos(\theta)\hat{u}_0 + \sin(\theta)\hat{v}_0
+\]
+
+\[
+\hat{v} = -\sin(\theta)\hat{u}_0 + \cos(\theta)\hat{v}_0
+\]
+
+This fixes the sign convention used by the analytical Core tests. It remains
+provisional until compared with Eclipse BEV coordinates during integration.
+
 **Important:** the final sign convention is not considered established merely because the mathematics is internally consistent. It must be validated in Eclipse against known field orientations and ESAPI's BEV projection before MLC logic is trusted.
 
 The Core project should provide any missing vector operations (for example a cross product) as small deterministic helpers using `VVector`.
@@ -521,4 +544,3 @@ The following should be resolved during development rather than guessed by Codex
 6. whether full image-voxel sampling is fast enough for routine use;
 7. eventual automatic beam/structure selection rules;
 8. clinical thresholds for gILF/gHIF.
-
