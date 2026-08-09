@@ -10,9 +10,9 @@ namespace BreastSurrogate.Core.Geometry
     /// <remarks>
     /// The unrotated axes are defined by
     /// u0 = normalize(referenceSuperior cross w) and v0 = w cross u0, where
-    /// w points from source to isocentre. A positive collimator angle rotates
-    /// u0 toward v0. This internal convention is not yet validated against
-    /// Varian/Eclipse BEV signs.
+    /// w points from isocentre toward the source, matching the BLD convention
+    /// viewed from the isocentre toward the collimator/head. A positive
+    /// collimator angle rotates u0 toward v0.
     /// </remarks>
     public sealed class BeamCoordinateSystem
     {
@@ -34,7 +34,7 @@ namespace BreastSurrogate.Core.Geometry
             }
 
             VVector wAxis = NormalizeRequired(
-                isocentre - source,
+                source - isocentre,
                 "isocentre",
                 "Source and isocentre must define a non-zero finite central axis.");
             VVector superiorAxis = NormalizeRequired(
@@ -77,7 +77,7 @@ namespace BreastSurrogate.Core.Geometry
         public VVector VAxis { get; private set; }
 
         /// <summary>
-        /// Unit source-to-isocentre axis and isocentre-plane normal.
+        /// Unit isocentre-to-source BLD viewing axis and isocentre-plane normal.
         /// </summary>
         public VVector WAxis { get; private set; }
 

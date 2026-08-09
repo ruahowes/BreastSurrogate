@@ -1,7 +1,10 @@
+using System;
+using BreastSurrogate.Core.Calculation;
+
 namespace BreastSurrogate.Esapi.Esapi
 {
     /// <summary>
-    /// Aggregate result from full-resolution image-voxel-centre structure sampling.
+    /// Aggregate structure-sampling diagnostics and jaw-only in-field result.
     /// </summary>
     public sealed class StructureVoxelSamplingResult
     {
@@ -18,8 +21,14 @@ namespace BreastSurrogate.Esapi.Esapi
             long structureMembershipQueryCount,
             double voxelVolumeCubicMillimetres,
             double esapiStructureVolumeCubicCentimetres,
+            InFieldCalculationResult inFieldResult,
             long elapsedMilliseconds)
         {
+            if (inFieldResult == null)
+            {
+                throw new ArgumentNullException("inFieldResult");
+            }
+
             StructureId = structureId;
             MinimumXIndex = minimumXIndex;
             MaximumXIndex = maximumXIndex;
@@ -32,6 +41,7 @@ namespace BreastSurrogate.Esapi.Esapi
             StructureMembershipQueryCount = structureMembershipQueryCount;
             VoxelVolumeCubicMillimetres = voxelVolumeCubicMillimetres;
             EsapiStructureVolumeCubicCentimetres = esapiStructureVolumeCubicCentimetres;
+            InFieldResult = inFieldResult;
             ElapsedMilliseconds = elapsedMilliseconds;
         }
 
@@ -66,6 +76,8 @@ namespace BreastSurrogate.Esapi.Esapi
         }
 
         public double EsapiStructureVolumeCubicCentimetres { get; private set; }
+
+        public InFieldCalculationResult InFieldResult { get; private set; }
 
         public long ElapsedMilliseconds { get; private set; }
     }

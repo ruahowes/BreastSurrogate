@@ -160,7 +160,8 @@ Initial support is deliberately restricted to:
 
 - external photon treatment plans;
 - conventional static tangent fields;
-- two selected treatment beams;
+- required tangent beam IDs `ANT MED` (field 1) and `POST LAT` (field 2),
+  matched case-insensitively during development before the selection UI exists;
 - head-first supine patient orientation;
 - patient support/couch angle of 0 degrees;
 - one static aperture per beam;
@@ -236,23 +237,30 @@ Let:
 - \(S\) = source position;
 - \(I\) = isocentre position.
 
-The unit source-to-isocentre direction is:
+The unit beam-propagation direction from source to isocentre is:
 
 \[
-\hat{w} = \frac{I-S}{|I-S|}
+\hat{d} = \frac{I-S}{|I-S|}
+\]
+
+The BLD viewing axis points from the isocentre toward the source because the
+collimator/head coordinate system is defined as viewed from the isocentre side:
+
+\[
+\hat{w} = \frac{S-I}{|S-I|} = -\hat{d}
 \]
 
 ### 8.3 Isocentre-plane basis
 
 For the initial HFS, couch-zero implementation, construct an orthonormal basis on the isocentre plane from:
 
-- the source-to-isocentre direction;
+- the isocentre-to-source BLD viewing axis;
 - the DICOM patient superior direction;
 - the collimator angle.
 
 The implementation must document the chosen cross-product order and collimator rotation sign.
 
-For the Phase 2 internal mathematical convention:
+For the HFS, couch-zero convention validated against Eclipse:
 
 \[
 \hat{u}_0 = \operatorname{normalize}(\hat{s}_{superior} \times \hat{w})
@@ -272,10 +280,11 @@ For a positive collimator angle \(\theta\), the beam-plane axes are rotated as:
 \hat{v} = -\sin(\theta)\hat{u}_0 + \cos(\theta)\hat{v}_0
 \]
 
-This fixes the sign convention used by the analytical Core tests. It remains
-provisional until compared with Eclipse BEV coordinates during integration.
-
-**Important:** the final sign convention is not considered established merely because the mathematics is internally consistent. It must be validated in Eclipse against known field orientations and ESAPI's BEV projection before MLC logic is trusted.
+This convention retains the raw ESAPI collimator angle. It was validated in
+Eclipse using opposed gantry angles of 308 and 128 degrees, collimator angles
+of 30 and 33 degrees, deliberately asymmetric X and Y jaws, and DICOM points
+offset from isocentre in the positive left, posterior and superior directions.
+The Core regression tests preserve all observed in/out classifications.
 
 The Core project should provide any missing vector operations (for example a cross product) as small deterministic helpers using `VVector`.
 
@@ -341,11 +350,36 @@ For the initial expected `MLCX` configuration:
 
 ESAPI leaf positions are indexed `[bank, leaf]`.
 
-The Core project should use an explicit `MlcGeometryDefinition` containing the leaf-boundary positions for each supported MLC model. The ESAPI project selects the correct definition from `Beam.MLC.Model`.
+The Core project uses an explicit `MlcGeometryDefinition` containing the
+leaf-boundary positions for each supported MLC model. Boundaries are in
+millimetres at isocentre, strictly increasing from negative to positive BLD Y.
+Leaf intervals are `[lower, upper)`; an internal boundary belongs to the leaf
+on its positive-Y side, while the final physical upper boundary belongs to the
+final leaf.
+
+The first configured model is the exact clinical identifier `Millennium 120`,
+observed in the development logs with `LeafPositions` dimensions `2 x 60`.
+Its configured 400 mm span consists of:
+
+- leaf pairs 0-9: 10 mm width, from -200 mm to -100 mm;
+- leaf pairs 10-49: 5 mm width, from -100 mm to +100 mm;
+- leaf pairs 50-59: 10 mm width, from +100 mm to +200 mm.
+
+Core MLC positions retain the documented ESAPI `[bank, leaf]` convention:
+bank 0 is the negative MLC-X bank and bank 1 is the positive MLC-X bank. A
+finite-width opening requires `bank0 < bank1`; equal or crossed tips are
+classified as closed. Bank edges are inclusive with the same `1e-9 mm`
+floating-point tolerance as jaws. The point must pass both jaw and MLC tests.
+
+The ESAPI project will select the configured definition from `Beam.MLC.Model`
+and verify the mapping between ESAPI leaf indices and the negative-to-positive
+BLD-Y definition during Phase 9 Eclipse validation.
 
 No model should be accepted unless its leaf geometry has been explicitly configured and validated.
 
-The first MLC implementation should support one known clinical TrueBeam model only. Additional models can be added later.
+The first MLC implementation supports only this known clinical TrueBeam model.
+Additional models can be added later after their identifiers and physical
+boundaries are explicitly verified.
 
 ## 11. Static control-point validation
 
@@ -543,7 +577,7 @@ Required selections:
 - tangent beam 1;
 - tangent beam 2;
 - ipsilateral lung;
-- heart.
+- heart, when present.
 
 Required output:
 
@@ -576,11 +610,8 @@ The script must not silently fall back to an approximation.
 
 The following should be resolved during development rather than guessed by Codex:
 
-1. exact BLD axis sign/cross-product convention after Eclipse validation;
-2. exact collimator rotation sign;
-3. supported TrueBeam MLC model identifier(s);
-4. validated leaf-boundary table(s);
-5. acceptable static-angle/position tolerances;
-6. whether full image-voxel sampling is fast enough for routine use;
-7. eventual automatic beam/structure selection rules;
-8. clinical thresholds for gILF/gHIF.
+1. ESAPI leaf-index direction for the configured Millennium 120 definition,
+   validated against Eclipse in Phase 9;
+2. acceptable static-angle/position tolerances;
+3. eventual automatic beam/structure selection rules;
+4. clinical thresholds for gILF/gHIF.

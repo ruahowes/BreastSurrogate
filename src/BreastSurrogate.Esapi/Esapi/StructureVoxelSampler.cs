@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Diagnostics;
 using System.Windows.Media.Media3D;
+using BreastSurrogate.Core.Apertures;
+using BreastSurrogate.Core.Calculation;
 using Uclh.XRT.Esapi.Utilities;
 using VMS.TPS.Common.Model.API;
 using VMS.TPS.Common.Model.Types;
@@ -9,15 +11,19 @@ using VMS.TPS.Common.Model.Types;
 namespace BreastSurrogate.Esapi.Esapi
 {
     /// <summary>
-    /// Counts full-resolution image voxel centres contained by an ESAPI structure.
+    /// Samples full-resolution ESAPI structure voxel centres and classifies two jaw apertures.
     /// </summary>
     public sealed class StructureVoxelSampler
     {
         private const int TruncatedIndexMarginVoxels = 1;
 
-        public StructureVoxelSamplingResult Sample(Structure structure, Image image)
+        public StructureVoxelSamplingResult Sample(
+            Structure structure,
+            Image image,
+            StaticBeamAperture field1,
+            StaticBeamAperture field2)
         {
-            ValidateInputs(structure, image);
+            ValidateInputs(structure, image, field1, field2);
 
             Rect3D bounds = structure.MeshGeometry.Bounds;
             VoxelIndexRange xRange = CreateRange(
@@ -40,6 +46,7 @@ namespace BreastSurrogate.Esapi.Esapi
                 (long)xRange.Count * yRange.Count * zRange.Count);
             long insideStructureVoxelCount = 0;
             long structureMembershipQueryCount = 0;
+            var inFieldClassifier = new JawInFieldPointClassifier(field1, field2);
             var profileBuffer = new BitArray(xRange.Count);
             var stopwatch = Stopwatch.StartNew();
 
@@ -59,6 +66,7 @@ namespace BreastSurrogate.Esapi.Esapi
                         if (structure.IsPointInsideSegment(start))
                         {
                             insideStructureVoxelCount++;
+                            inFieldClassifier.Add(start);
                         }
 
                         continue;
@@ -89,6 +97,7 @@ namespace BreastSurrogate.Esapi.Esapi
                         if (profileBuffer[xOffset])
                         {
                             insideStructureVoxelCount++;
+                            inFieldClassifier.Add(profile[xOffset].Position);
                         }
                     }
                 }
@@ -104,6 +113,9 @@ namespace BreastSurrogate.Esapi.Esapi
             }
 
             double voxelVolumeCubicMillimetres = image.XRes * image.YRes * image.ZRes;
+            InFieldCalculationResult inFieldResult = inFieldClassifier.CreateResult(
+                voxelVolumeCubicMillimetres,
+                structure.Volume);
 
             return new StructureVoxelSamplingResult(
                 structure.Id,
@@ -118,10 +130,15 @@ namespace BreastSurrogate.Esapi.Esapi
                 structureMembershipQueryCount,
                 voxelVolumeCubicMillimetres,
                 structure.Volume,
+                inFieldResult,
                 stopwatch.ElapsedMilliseconds);
         }
 
-        private static void ValidateInputs(Structure structure, Image image)
+        private static void ValidateInputs(
+            Structure structure,
+            Image image,
+            StaticBeamAperture field1,
+            StaticBeamAperture field2)
         {
             if (structure == null)
             {
@@ -131,6 +148,16 @@ namespace BreastSurrogate.Esapi.Esapi
             if (image == null)
             {
                 throw new ArgumentNullException("image");
+            }
+
+            if (field1 == null)
+            {
+                throw new ArgumentNullException("field1");
+            }
+
+            if (field2 == null)
+            {
+                throw new ArgumentNullException("field2");
             }
 
             if (!structure.HasSegment || structure.IsEmpty)

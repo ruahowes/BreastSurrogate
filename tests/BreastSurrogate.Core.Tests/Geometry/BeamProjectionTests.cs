@@ -15,9 +15,9 @@ namespace BreastSurrogate.Core.Tests.Geometry
         {
             BeamCoordinateSystem coordinates = CreateCoordinates(0.0);
 
-            AssertVector(1.0, 0.0, 0.0, coordinates.UAxis);
+            AssertVector(-1.0, 0.0, 0.0, coordinates.UAxis);
             AssertVector(0.0, 1.0, 0.0, coordinates.VAxis);
-            AssertVector(0.0, 0.0, 1.0, coordinates.WAxis);
+            AssertVector(0.0, 0.0, -1.0, coordinates.WAxis);
             AssertVector(coordinates.WAxis, VectorMath.Cross(coordinates.UAxis, coordinates.VAxis));
         }
 
@@ -53,7 +53,7 @@ namespace BreastSurrogate.Core.Tests.Geometry
 
             ProjectedBeamPoint result = projection.Project(new VVector(15.0, -20.0, 0.0));
 
-            AssertBeamCoordinates(15.0, -20.0, result);
+            AssertBeamCoordinates(-15.0, -20.0, result);
             AssertVector(15.0, -20.0, 0.0, result.ProjectedPoint);
         }
 
@@ -65,9 +65,9 @@ namespace BreastSurrogate.Core.Tests.Geometry
             ProjectedBeamPoint beforeIsocentre = projection.Project(new VVector(5.0, 0.0, -500.0));
             ProjectedBeamPoint afterIsocentre = projection.Project(new VVector(20.0, 0.0, 1000.0));
 
-            AssertBeamCoordinates(10.0, 0.0, beforeIsocentre);
+            AssertBeamCoordinates(-10.0, 0.0, beforeIsocentre);
             Assert.AreEqual(2.0, beforeIsocentre.ProjectionParameter, AssertionTolerance);
-            AssertBeamCoordinates(10.0, 0.0, afterIsocentre);
+            AssertBeamCoordinates(-10.0, 0.0, afterIsocentre);
             Assert.AreEqual(0.5, afterIsocentre.ProjectionParameter, AssertionTolerance);
         }
 
@@ -80,8 +80,8 @@ namespace BreastSurrogate.Core.Tests.Geometry
             ProjectedBeamPoint result = projection.Project(new VVector(10.0, 0.0, 0.0));
 
             AssertVector(0.0, 1.0, 0.0, coordinates.UAxis);
-            AssertVector(-1.0, 0.0, 0.0, coordinates.VAxis);
-            AssertBeamCoordinates(0.0, -10.0, result);
+            AssertVector(1.0, 0.0, 0.0, coordinates.VAxis);
+            AssertBeamCoordinates(0.0, 10.0, result);
         }
 
         [TestMethod]

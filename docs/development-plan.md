@@ -263,6 +263,11 @@ Validate across different gantry and collimator angles.
 
 Use `Beam.GetStructureOutlines(structure, true)` as an independent BEV reference where useful.
 
+The validated HFS/couch-zero convention uses an isocentre-to-source BLD
+viewing axis, the reported ESAPI collimator angle unchanged, and the documented
+Core cross-product/rotation formula. Asymmetric X/Y jaw tests at opposed
+gantry and non-zero collimator angles are retained as Core regressions.
+
 ### Acceptance
 
 The jaw-only coordinate system agrees with Eclipse for tested field orientations.
@@ -344,7 +349,14 @@ Values:
 - field-2 points;
 - union points;
 - intersection points;
-- corresponding percentages.
+- corresponding sampled in-field volumes;
+- corresponding percentages using ESAPI `Structure.Volume` as the denominator.
+
+Until Phase 10 provides explicit selection, require exactly one treatment beam
+with ID `ANT MED` and exactly one with ID `POST LAT`, matched case-insensitively.
+Use `ANT MED` as field 1 and `POST LAT` as field 2. Other treatment beams may
+remain in the plan but are logged and excluded from this calculation. Reject a
+missing or duplicate required ID rather than silently choosing another beam.
 
 ### Algorithm
 
@@ -359,6 +371,12 @@ field2 += in2
 union += in1 || in2
 intersection += in1 && in2
 ```
+
+Use the full-resolution Phase 6 segment-profile positions as the sampled
+structure points. The primary value is the union (`in1 || in2`). Calculate its
+physical numerator as `union count * voxel volume`, convert from mm3 to cm3,
+and divide by the ESAPI-reported structure volume in cm3. Do the same for the
+field-1, field-2 and intersection diagnostics.
 
 ### Eclipse checks
 
@@ -384,7 +402,8 @@ Implement MLC aperture logic in Core independently of ESAPI objects.
 - obtain/verify the physical leaf-boundary geometry for that model;
 - create `MlcGeometryDefinition`;
 - implement mapping from `yBLD` to leaf pair;
-- implement `[bank, leaf]` opening test;
+- implement `[bank, leaf]` opening test using the documented bank 0
+  negative-X / bank 1 positive-X convention;
 - combine MLC and jaw checks.
 
 ### Unit tests
@@ -402,6 +421,12 @@ Create synthetic leaf arrays and test:
 ### Acceptance
 
 MLC aperture logic is deterministic and independently unit tested.
+
+Phase 8 configuration records `Millennium 120` with a `2 x 60` leaf array,
+using 10 outer 10 mm pairs on each side and 40 central 5 mm pairs over a
+400 mm span at isocentre. Core leaf geometry is ordered from negative to
+positive BLD Y. Phase 9 must validate that ESAPI leaf index order against
+Eclipse before the aperture is used clinically.
 
 ## 11. Phase 9 — ESAPI MLC integration
 

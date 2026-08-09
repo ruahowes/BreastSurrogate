@@ -43,7 +43,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Apertures\JawAperture.cs" />
+    <Compile Include="Apertures\MlcAperture.cs" />
+    <Compile Include="Apertures\MlcGeometryDefinition.cs" />
     <Compile Include="Apertures\StaticBeamAperture.cs" />
+    <Compile Include="Apertures\SupportedMlcGeometries.cs" />
+    <Compile Include="Calculation\InFieldCalculationResult.cs" />
+    <Compile Include="Calculation\InFieldSampleAccumulator.cs" />
+    <Compile Include="Calculation\JawInFieldPointClassifier.cs" />
     <Compile Include="Geometry\BeamCoordinateSystem.cs" />
     <Compile Include="Geometry\BeamProjection.cs" />
     <Compile Include="Geometry\ProjectedBeamPoint.cs" />

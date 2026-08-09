@@ -54,7 +54,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Apertures\JawApertureTests.cs" />
+    <Compile Include="Apertures\MlcApertureTests.cs" />
+    <Compile Include="Apertures\MlcGeometryDefinitionTests.cs" />
     <Compile Include="Apertures\StaticBeamApertureTests.cs" />
+    <Compile Include="Calculation\InFieldSampleAccumulatorTests.cs" />
+    <Compile Include="Calculation\JawInFieldPointClassifierTests.cs" />
     <Compile Include="Geometry\BeamProjectionTests.cs" />
     <Compile Include="Geometry\VectorMathTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
