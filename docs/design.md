@@ -21,19 +21,19 @@ The geometric result is a new metric and must not initially be assumed to be num
 
 ## 2. Definitions
 
-For two selected tangent fields with geometric apertures \(A_1\) and \(A_2\):
+For two selected tangent fields with geometric apertures $A_1$ and $A_2$:
 
-\[
+$$
 gILF = 100 \times
 \frac{V(Lung_{ipsi} \cap (A_1 \cup A_2))}
 {V(Lung_{ipsi})}
-\]
+$$
 
-\[
+$$
 gHIF = 100 \times
 \frac{V(Heart \cap (A_1 \cup A_2))}
 {V(Heart)}
-\]
+$$
 
 A sampled point is therefore counted as "in field" when it is inside the open geometric aperture of **either** selected tangent field.
 
@@ -244,21 +244,21 @@ These values are converted into a Core model such as `StaticBeamGeometry`.
 
 Let:
 
-- \(S\) = source position;
-- \(I\) = isocentre position.
+- $S$ = source position;
+- $I$ = isocentre position.
 
 The unit beam-propagation direction from source to isocentre is:
 
-\[
+$$
 \hat{d} = \frac{I-S}{|I-S|}
-\]
+$$
 
 The BLD viewing axis points from the isocentre toward the source because the
 collimator/head coordinate system is defined as viewed from the isocentre side:
 
-\[
+$$
 \hat{w} = \frac{S-I}{|S-I|} = -\hat{d}
-\]
+$$
 
 ### 8.3 Isocentre-plane basis
 
@@ -272,23 +272,23 @@ The implementation must document the chosen cross-product order and collimator r
 
 For the HFS, couch-zero convention validated against Eclipse:
 
-\[
+$$
 \hat{u}_0 = \operatorname{normalize}(\hat{s}_{superior} \times \hat{w})
-\]
+$$
 
-\[
+$$
 \hat{v}_0 = \hat{w} \times \hat{u}_0
-\]
+$$
 
-For a positive collimator angle \(\theta\), the beam-plane axes are rotated as:
+For a positive collimator angle $\theta$, the beam-plane axes are rotated as:
 
-\[
+$$
 \hat{u} = \cos(\theta)\hat{u}_0 + \sin(\theta)\hat{v}_0
-\]
+$$
 
-\[
+$$
 \hat{v} = -\sin(\theta)\hat{u}_0 + \cos(\theta)\hat{v}_0
-\]
+$$
 
 This convention retains the raw ESAPI collimator angle. It was validated in
 Eclipse using opposed gantry angles of 308 and 128 degrees, collimator angles
@@ -300,37 +300,37 @@ The Core project should provide any missing vector operations (for example a cro
 
 ### 8.4 Projection onto the isocentre plane
 
-For patient point \(P\), define the ray:
+For patient point $P$, define the ray:
 
-\[
+$$
 R(t)=S+t(P-S)
-\]
+$$
 
-The isocentre plane passes through \(I\) and has normal \(\hat{w}\).
+The isocentre plane passes through $I$ and has normal $\hat{w}$.
 
 The ray/plane intersection parameter is:
 
-\[
+$$
 t =
 \frac{(I-S)\cdot\hat{w}}
 {(P-S)\cdot\hat{w}}
-\]
+$$
 
 The projected point is:
 
-\[
+$$
 Q=S+t(P-S)
-\]
+$$
 
-If \(\hat{u}\) and \(\hat{v}\) are the BLD plane axes:
+If $\hat{u}$ and $\hat{v}$ are the BLD plane axes:
 
-\[
+$$
 x_{BLD}=(Q-I)\cdot\hat{u}
-\]
+$$
 
-\[
+$$
 y_{BLD}=(Q-I)\cdot\hat{v}
-\]
+$$
 
 The projection implementation must detect invalid/degenerate cases such as a near-zero denominator.
 
@@ -490,26 +490,26 @@ reference counts before the batched method is accepted.
 
 All image voxels in a given image have the same voxel volume:
 
-\[
+$$
 V_{voxel}=XRes \times YRes \times ZRes
-\]
+$$
 
 Phase 6 showed close agreement between sampled and ESAPI-reported structure
 volumes on the initial full lung and heart. The calculation will therefore use
 the ESAPI `Structure.Volume` value in cubic centimetres as the denominator,
 while the sampled in-field voxel volume supplies the numerator:
 
-\[
+$$
 gIF = 100 \times
 \frac{N_{infield} \times V_{voxel}}
 {1000 \times V_{ESAPI}}
-\]
+$$
 
 The sampled structure volume can also be calculated:
 
-\[
+$$
 V_{sampled}=N_{structure}\times V_{voxel}
-\]
+$$
 
 and compared with `Structure.Volume` as a useful diagnostic.
 
