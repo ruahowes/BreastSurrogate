@@ -273,7 +273,7 @@ The implementation must document the chosen cross-product order and collimator r
 For the HFS, couch-zero convention validated against Eclipse:
 
 $$
-\hat{u}_0 = \operatorname{normalize}(\hat{s}_{superior} \times \hat{w})
+\hat{u}_0 = \mathrm{normalize}(\hat{s}_{superior} \times \hat{w})
 $$
 
 $$
