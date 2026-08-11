@@ -7,9 +7,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BreastSurrogate.Core", "src
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BreastSurrogate.Esapi", "src\BreastSurrogate.Esapi\BreastSurrogate.Esapi.csproj", "{3B707FF8-E95A-46EB-A62F-3BB1D5CC08DF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BreastSurrogate.Batch", "src\BreastSurrogate.Batch\BreastSurrogate.Batch.csproj", "{7606E4F6-5379-4F78-9D4B-2B03C1035A9D}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BreastSurrogate.Core.Tests", "tests\BreastSurrogate.Core.Tests\BreastSurrogate.Core.Tests.csproj", "{36F58BB8-A103-459A-A4A2-4462D860E174}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BreastSurrogate.Esapi.Tests", "tests\BreastSurrogate.Esapi.Tests\BreastSurrogate.Esapi.Tests.csproj", "{61E54869-F4D0-4E17-842E-43DC9DCC17EA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BreastSurrogate.Batch.Tests", "tests\BreastSurrogate.Batch.Tests\BreastSurrogate.Batch.Tests.csproj", "{00D0AA8B-23D8-420D-A26E-2CD88C626541}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -28,6 +32,10 @@ Global
 		{3B707FF8-E95A-46EB-A62F-3BB1D5CC08DF}.Debug|x64.Build.0 = Debug|x64
 		{3B707FF8-E95A-46EB-A62F-3BB1D5CC08DF}.Release|x64.ActiveCfg = Release|x64
 		{3B707FF8-E95A-46EB-A62F-3BB1D5CC08DF}.Release|x64.Build.0 = Release|x64
+		{7606E4F6-5379-4F78-9D4B-2B03C1035A9D}.Debug|x64.ActiveCfg = Debug|x64
+		{7606E4F6-5379-4F78-9D4B-2B03C1035A9D}.Debug|x64.Build.0 = Debug|x64
+		{7606E4F6-5379-4F78-9D4B-2B03C1035A9D}.Release|x64.ActiveCfg = Release|x64
+		{7606E4F6-5379-4F78-9D4B-2B03C1035A9D}.Release|x64.Build.0 = Release|x64
 		{36F58BB8-A103-459A-A4A2-4462D860E174}.Debug|x64.ActiveCfg = Debug|x64
 		{36F58BB8-A103-459A-A4A2-4462D860E174}.Debug|x64.Build.0 = Debug|x64
 		{36F58BB8-A103-459A-A4A2-4462D860E174}.Release|x64.ActiveCfg = Release|x64
@@ -36,5 +44,9 @@ Global
 		{61E54869-F4D0-4E17-842E-43DC9DCC17EA}.Debug|x64.Build.0 = Debug|x64
 		{61E54869-F4D0-4E17-842E-43DC9DCC17EA}.Release|x64.ActiveCfg = Release|x64
 		{61E54869-F4D0-4E17-842E-43DC9DCC17EA}.Release|x64.Build.0 = Release|x64
+		{00D0AA8B-23D8-420D-A26E-2CD88C626541}.Debug|x64.ActiveCfg = Debug|x64
+		{00D0AA8B-23D8-420D-A26E-2CD88C626541}.Debug|x64.Build.0 = Debug|x64
+		{00D0AA8B-23D8-420D-A26E-2CD88C626541}.Release|x64.ActiveCfg = Release|x64
+		{00D0AA8B-23D8-420D-A26E-2CD88C626541}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 EndGlobal

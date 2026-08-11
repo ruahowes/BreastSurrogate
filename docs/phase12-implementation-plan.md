@@ -1,6 +1,6 @@
 # Phase 12 standalone batch audit implementation plan
 
-**Status:** In progress; milestone 12A complete, 12B implemented pending Eclipse check
+**Status:** In progress; milestones 12A and 12B complete, 12C implemented pending standalone-environment check
 **Requirements authority:** `docs/batch-audit-requirements.md`  
 **Safety:** Read-only ESAPI operation; sequential patient access; no ARIA modification
 
@@ -124,7 +124,7 @@ diagnostics so the headline values remain easy to find near the end of the log.
 
 ## 4. Milestone 12B — Reusable structure selectors
 
-**Status:** Implemented; Eclipse diagnostic check pending
+**Status:** Complete
 
 Add deterministic selectors for Heart and legacy numerator structures while
 continuing to use `IpsilateralLungSelector` independently for each plan.
@@ -162,13 +162,14 @@ substring selection from thin ESAPI `Structure` adapters. The geometric gHIF
 calculation now uses the Heart selector and returns its complete candidate
 diagnostics without exposing a persistent ESAPI object. Legacy ILF/HIF
 selectors are implemented and tested but are not invoked until milestone 12F
-adds the legacy volume-ratio calculation. Automated validation currently
-passes 57 Core tests and 19 ESAPI-contract tests. Final acceptance remains
-pending a representative Eclipse log showing the Heart selection diagnostics.
+adds the legacy volume-ratio calculation. Automated validation passes 57 Core
+tests and 19 ESAPI-contract tests. Inspection of the representative Eclipse log
+on 11 August 2026 confirmed that the Heart candidate and ranking diagnostics
+were clear and that selection matched Eclipse.
 
 ## 5. Milestone 12C — Standalone executable scaffold
 
-**Status:** Not started
+**Status:** Implemented; standalone ESAPI environment check pending
 
 Add an old-style, non-SDK, x64 executable project targeting .NET Framework
 4.6.2, provisionally named `BreastSurrogate.Batch`.
@@ -187,18 +188,34 @@ assemblies. Do not copy those differences into the production project.
 
 ### Tasks
 
-- [ ] Create the non-SDK .NET Framework 4.6.2 x64 executable project.
-- [ ] Add an `[STAThread]` entry point.
-- [ ] Create exactly one ESAPI `Application` for the process.
-- [ ] Dispose the application before exit.
-- [ ] Prohibit `BeginModifications()` and all write-enabled operations.
-- [ ] Add command-line validation and a non-zero process exit code for fatal
+- [x] Create the non-SDK .NET Framework 4.6.2 x64 executable project.
+- [x] Add an `[STAThread]` entry point.
+- [x] Create exactly one ESAPI `Application` for the process.
+- [x] Dispose the application before exit.
+- [x] Prohibit `BeginModifications()` and all write-enabled operations.
+- [x] Add command-line validation and a non-zero process exit code for fatal
       startup/configuration failures.
+- [x] Add a console progress reporter suitable for interactive and redirected
+      output, ready to connect to the patient loop in milestone 12G.
+- [ ] Confirm startup and clean exit in the supported standalone ESAPI environment.
 
 ### Acceptance
 
 The executable starts in the documented ESAPI standalone environment, loads its
 configuration and exits cleanly without opening or modifying a patient.
+
+Implementation adds `BreastSurrogate.Batch` as an old-style .NET Framework
+4.6.2 x64 executable with an STA entry point, exactly one process-level ESAPI
+`Application`, deterministic disposal, input-path validation and explicit exit
+codes. An explicit `--check-esapi` mode, also offered as `T` after an
+interactive no-argument launch, verifies application creation and disposal
+without requiring placeholder input files. It deliberately does not open a patient. The supplied
+`docs/ConsoleUtility.cs` informed a tested ASCII progress reporter that updates
+one console line interactively and emits durable lines when output is
+redirected; patient-by-patient reporting will be wired in during milestone 12G.
+Configuration parsing remains milestone 12D. Automated validation currently
+passes 57 Core, 19 ESAPI-contract and 9 Batch tests. The remaining 12C check is
+to run the scaffold in the hospital standalone ESAPI environment.
 
 ## 6. Milestone 12D — Configuration and table I/O
 
