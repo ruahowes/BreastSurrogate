@@ -137,6 +137,11 @@ the value, query and units are unambiguous.
 
 ```json
 {
+  "version": 1,
+  "paths": {
+    "logDirectory": ".",
+    "outputDirectory": "."
+  },
   "courseDiscovery": {
     "planningCourseIdContains": "PLANNING",
     "requireRejectedPlan": true,

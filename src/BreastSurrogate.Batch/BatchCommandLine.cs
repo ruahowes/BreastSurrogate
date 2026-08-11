@@ -46,9 +46,29 @@ namespace BreastSurrogate.Batch
             out BatchCommandLineOptions options,
             out string error)
         {
+            return TryParse(
+                arguments,
+                fileExists,
+                Directory.Exists,
+                out options,
+                out error);
+        }
+
+        internal static bool TryParse(
+            string[] arguments,
+            Func<string, bool> fileExists,
+            Func<string, bool> directoryExists,
+            out BatchCommandLineOptions options,
+            out string error)
+        {
             if (fileExists == null)
             {
                 throw new ArgumentNullException("fileExists");
+            }
+
+            if (directoryExists == null)
+            {
+                throw new ArgumentNullException("directoryExists");
             }
 
             options = null;
@@ -69,6 +89,15 @@ namespace BreastSurrogate.Batch
             {
                 return false;
             }
+
+            patientListPath = ResolveFileOrDirectory(
+                patientListPath,
+                "patients.csv",
+                directoryExists);
+            configurationPath = ResolveFileOrDirectory(
+                configurationPath,
+                "config.json",
+                directoryExists);
 
             if (!fileExists(patientListPath))
             {
@@ -101,7 +130,15 @@ namespace BreastSurrogate.Batch
 
             try
             {
-                normalizedPath = Path.GetFullPath(path.Trim());
+                string trimmedPath = path.Trim();
+                if (trimmedPath.Length >= 2
+                    && trimmedPath[0] == '"'
+                    && trimmedPath[trimmedPath.Length - 1] == '"')
+                {
+                    trimmedPath = trimmedPath.Substring(1, trimmedPath.Length - 2);
+                }
+
+                normalizedPath = Path.GetFullPath(trimmedPath);
                 error = null;
                 return true;
             }
@@ -120,6 +157,16 @@ namespace BreastSurrogate.Batch
                 error = "An input path is too long. " + Usage;
                 return false;
             }
+        }
+
+        private static string ResolveFileOrDirectory(
+            string path,
+            string conventionalFileName,
+            Func<string, bool> directoryExists)
+        {
+            return directoryExists(path)
+                ? Path.Combine(path, conventionalFileName)
+                : path;
         }
     }
 }

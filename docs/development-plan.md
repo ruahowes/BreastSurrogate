@@ -589,16 +589,29 @@ gHIF; legacy selectors remain dormant until the Phase 12F volume-ratio work.
 Inspection of the representative Eclipse log on 11 August 2026 confirmed the
 Heart candidate/ranking diagnostics and completed milestone 12B.
 
-Milestone 12C is implemented as the old-style .NET Framework 4.6.2 x64
+Milestone 12C is complete as the old-style .NET Framework 4.6.2 x64
 `BreastSurrogate.Batch` executable. It has an STA entry point, validates its two
 input paths, creates and disposes exactly one standalone ESAPI `Application`,
 does not open a patient, and returns explicit fatal-startup exit codes. Its
 `--check-esapi` mode can verify that lifecycle without input files and is also
 offered interactively after a no-argument launch. A tested
 console progress reporter, adapted from `docs/ConsoleUtility.cs`, is ready to be
-wired to the patient loop in milestone 12G. The remaining 12C acceptance check
-is startup and clean exit in the hospital standalone ESAPI environment;
-configuration parsing belongs to milestone 12D.
+wired to the patient loop in milestone 12G. The hospital-network startup check
+on 11 August 2026 confirmed successful application creation and disposal.
+The standalone deployment follows the working `docs/Main.cs` and
+AutoRegression convention: the public Model.API and Model.Types assemblies are
+copied beside the executable, no application-level ESAPI binding redirects are
+generated, and private Interface assemblies are supplied by the matching
+installed ESAPI runtime. Do not deploy private Interface DLLs or mix releases.
+
+Milestone 12D is implemented with versioned JSON configuration, configuration
+hashing, quoted-field CSV input, stable invariant CSV output contracts and
+explicit unavailable status/reason fields. Inputs are validated before ESAPI
+startup. A no-argument launch prompts for the CSV and JSON paths; both the
+prompts and command line accept a full filename or a directory containing the
+conventional `patients.csv` or `config.json`. Copy-ready examples live in
+`docs/batch-example`. The remaining 12D check is a hospital-environment run
+through the new interactive input prompts.
 
 ### Input and execution
 

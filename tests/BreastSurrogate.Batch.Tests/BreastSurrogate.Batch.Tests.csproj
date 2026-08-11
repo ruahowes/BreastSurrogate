@@ -61,8 +61,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BatchConfigurationTests.cs" />
     <Compile Include="BatchCommandLineTests.cs" />
+    <Compile Include="BatchOutputCsvTests.cs" />
     <Compile Include="ConsoleProgressReporterTests.cs" />
+    <Compile Include="InteractiveInputTests.cs" />
+    <Compile Include="PatientInputCsvTests.cs" />
     <Compile Include="ProgramTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

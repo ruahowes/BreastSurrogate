@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "paths": {
+    "logDirectory": ".",
+    "outputDirectory": "."
+  },
+  "courseDiscovery": {
+    "planningCourseIdContains": "PLANNING",
+    "requireRejectedPlan": true,
+    "requiredReviewedPlanCount": 1,
+    "physicsCourseTokenPattern": "(?:^|[ _-])(PPHYS|PHYS)(?:$|[ _-])",
+    "physicsPlanTokenPattern": "(?:^|[ _-])(PPHYS|PHYS)(?:$|[ _-])"
+  },
+  "dvh": {
+    "binWidthGy": 0.01,
+    "metrics": [
+      {
+        "name": "IpsilateralLung_V8Gy_Percent",
+        "structure": "IpsilateralLung",
+        "type": "VolumeAtDose",
+        "doseGy": 8.0,
+        "volumePresentation": "RelativePercent"
+      },
+      {
+        "name": "IpsilateralLung_V12Gy_Percent",
+        "structure": "IpsilateralLung",
+        "type": "VolumeAtDose",
+        "doseGy": 12.0,
+        "volumePresentation": "RelativePercent"
+      },
+      {
+        "name": "Heart_Dmean_Gy",
+        "structure": "Heart",
+        "type": "MeanDose",
+        "dosePresentation": "AbsoluteGy"
+      }
+    ]
+  }
+}

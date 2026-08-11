@@ -116,5 +116,27 @@ namespace BreastSurrogate.Batch.Tests
             Assert.IsFalse(BatchCommandLine.IsEsapiStartupCheck(
                 new[] { "--check-esapi", "extra" }));
         }
+
+        [TestMethod]
+        public void DirectoriesResolveToConventionalInputFileNames()
+        {
+            string patientDirectory = Path.GetFullPath("patient-input");
+            string configDirectory = Path.GetFullPath("configuration-input");
+            BatchCommandLineOptions options;
+            string error;
+
+            bool parsed = BatchCommandLine.TryParse(
+                new[] { "\"" + patientDirectory + "\"", configDirectory },
+                path => path.EndsWith("patients.csv", StringComparison.OrdinalIgnoreCase)
+                    || path.EndsWith("config.json", StringComparison.OrdinalIgnoreCase),
+                path => string.Equals(path, patientDirectory, StringComparison.Ordinal)
+                    || string.Equals(path, configDirectory, StringComparison.Ordinal),
+                out options,
+                out error);
+
+            Assert.IsTrue(parsed, error);
+            Assert.AreEqual(Path.Combine(patientDirectory, "patients.csv"), options.PatientListPath);
+            Assert.AreEqual(Path.Combine(configDirectory, "config.json"), options.ConfigurationPath);
+        }
     }
 }

@@ -1,6 +1,6 @@
 # Phase 12 standalone batch audit implementation plan
 
-**Status:** In progress; milestones 12A and 12B complete, 12C implemented pending standalone-environment check
+**Status:** In progress; milestones 12A-12C complete, 12D implemented pending interactive check
 **Requirements authority:** `docs/batch-audit-requirements.md`  
 **Safety:** Read-only ESAPI operation; sequential patient access; no ARIA modification
 
@@ -169,7 +169,7 @@ were clear and that selection matched Eclipse.
 
 ## 5. Milestone 12C — Standalone executable scaffold
 
-**Status:** Implemented; standalone ESAPI environment check pending
+**Status:** Complete
 
 Add an old-style, non-SDK, x64 executable project targeting .NET Framework
 4.6.2, provisionally named `BreastSurrogate.Batch`.
@@ -197,7 +197,7 @@ assemblies. Do not copy those differences into the production project.
       startup/configuration failures.
 - [x] Add a console progress reporter suitable for interactive and redirected
       output, ready to connect to the patient loop in milestone 12G.
-- [ ] Confirm startup and clean exit in the supported standalone ESAPI environment.
+- [x] Confirm startup and clean exit in the supported standalone ESAPI environment.
 
 ### Acceptance
 
@@ -209,17 +209,24 @@ Implementation adds `BreastSurrogate.Batch` as an old-style .NET Framework
 `Application`, deterministic disposal, input-path validation and explicit exit
 codes. An explicit `--check-esapi` mode, also offered as `T` after an
 interactive no-argument launch, verifies application creation and disposal
-without requiring placeholder input files. It deliberately does not open a patient. The supplied
+without requiring placeholder input files. It deliberately does not open a
+patient. The supplied
 `docs/ConsoleUtility.cs` informed a tested ASCII progress reporter that updates
 one console line interactively and emits durable lines when output is
 redirected; patient-by-patient reporting will be wired in during milestone 12G.
-Configuration parsing remains milestone 12D. Automated validation currently
-passes 57 Core, 19 ESAPI-contract and 9 Batch tests. The remaining 12C check is
-to run the scaffold in the hospital standalone ESAPI environment.
+The hospital-network check on 11 August 2026 confirmed successful ESAPI
+application creation and disposal, completing milestone 12C.
+
+The standalone deployment follows the working `docs/Main.cs` and
+AutoRegression pattern: copy the public Model.API and Model.Types reference
+assemblies beside the executable, use a simple .NET Framework startup config
+without application-level ESAPI binding redirects, and rely on the installed
+matching ESAPI runtime for private Interface assemblies. Never deploy private
+Varian Interface DLLs or combine public assemblies from different releases.
 
 ## 6. Milestone 12D — Configuration and table I/O
 
-**Status:** Not started
+**Status:** Implemented; interactive input check pending
 
 Use a command line conceptually equivalent to:
 
@@ -239,19 +246,36 @@ set suitable for deployment on the hospital network.
 
 ### Tasks
 
-- [ ] Define versioned configuration and input-row contracts.
-- [ ] Parse and validate JSON before creating the ESAPI application where practical.
-- [ ] Parse quoted CSV fields, permit repeated patient IDs with different
+- [x] Define versioned configuration and input-row contracts.
+- [x] Parse and validate JSON before creating the ESAPI application where practical.
+- [x] Parse quoted CSV fields, permit repeated patient IDs with different
       treatment overrides, and report malformed or exact duplicate rows clearly.
-- [ ] Define stable output columns and invariant-culture numeric formatting.
-- [ ] Represent unavailable values as blank values plus explicit status/reason.
-- [ ] Default output to the log directory, allowing a similar approved directory.
-- [ ] Test quoting, commas, blank overrides, invalid JSON and invalid metric requests.
+- [x] Define stable output columns and invariant-culture numeric formatting.
+- [x] Represent unavailable values as blank values plus explicit status/reason.
+- [x] Default output to the log directory, allowing a similar approved directory.
+- [x] Test quoting, commas, blank overrides, invalid JSON and invalid metric requests.
+- [x] Permit interactive entry of file paths or directories after a no-argument launch.
+- [ ] Confirm the interactive prompts and validation summary in the hospital environment.
 
 ### Acceptance
 
 Input and configuration errors are reported before patient processing, and CSV
 round trips preserve identifiers and diagnostic text safely.
+
+Implementation uses only .NET Framework libraries. Version-1 JSON is validated
+before ESAPI startup and records an exact SHA-256 configuration hash. The CSV
+reader handles quoted commas, escaped quotes and embedded line breaks; exact
+duplicate rows are rejected while repeated patient IDs with different
+overrides are retained. The output contract has stable provenance and
+per-metric value/unit/status/reason columns, uses invariant numbers, and leaves
+unavailable values blank. Output defaults to the configured log directory.
+
+A no-argument launch now prompts for the patient CSV and JSON config. Each
+entry may be a full filename or a directory containing `patients.csv` or
+`config.json`; command-line arguments accept the same directory shorthand.
+Copy-ready inputs are in `docs/batch-example`. Automated validation currently
+passes 57 Core, 19 ESAPI-contract and 28 Batch tests. Actual patient opening and
+result-row production remain milestones 12E-12G.
 
 ## 7. Milestone 12E — Deterministic plan discovery
 
