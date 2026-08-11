@@ -64,6 +64,9 @@
     <Compile Include="Calculation\BreastSurrogateCalculationResultTests.cs" />
     <Compile Include="Calculation\SurrogateMetricResultTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Selection\HeartStructureIdSelectorTests.cs" />
+    <Compile Include="Selection\StructureIdTextTests.cs" />
+    <Compile Include="Selection\UniqueSubstringStructureIdSelectorTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\BreastSurrogate.Core\BreastSurrogate.Core.csproj">

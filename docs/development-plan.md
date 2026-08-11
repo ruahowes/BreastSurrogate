@@ -583,6 +583,12 @@ regression run on 11 August 2026 confirmed unchanged gILF/gHIF percentages and
 equivalent diagnostics. Headline metric results are grouped near the end of the
 log after detailed structure sampling.
 
+Milestone 12B is implemented with pure deterministic Heart and ILF/HIF ID
+selection plus thin read-only ESAPI adapters. Heart selection is active for
+gHIF; legacy selectors remain dormant until the Phase 12F volume-ratio work.
+The final 12B acceptance check is inspection of Heart candidate/ranking entries
+in an Eclipse log.
+
 ### Input and execution
 
 Use an explicit input table containing at minimum:

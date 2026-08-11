@@ -68,6 +68,8 @@
     <Compile Include="Esapi\StructureVoxelSampler.cs" />
     <Compile Include="Esapi\StructureVoxelSamplingException.cs" />
     <Compile Include="Esapi\StructureVoxelSamplingResult.cs" />
+    <Compile Include="Esapi\StructureIdSelection.cs" />
+    <Compile Include="Esapi\StructureSelectors.cs" />
     <Compile Include="Esapi\SurrogateMetricResult.cs" />
     <Compile Include="Esapi\UnsupportedBeamGeometryException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

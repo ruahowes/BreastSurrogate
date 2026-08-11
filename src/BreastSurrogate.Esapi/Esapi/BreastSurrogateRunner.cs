@@ -200,6 +200,14 @@ namespace BreastSurrogate.Esapi.Esapi
                 LogIpsilateralLungSelection(logger, result.LungSelection);
             }
 
+            if (result.HeartSelection != null)
+            {
+                LogStructureIdSelection(
+                    logger,
+                    "Phase12.HeartSelection.",
+                    result.HeartSelection);
+            }
+
             logger.Log(
                 "Phase9.IpsilateralLungStatus",
                 FormatStructureStatus(result.GeometricIlf));
@@ -599,6 +607,47 @@ namespace BreastSurrogate.Esapi.Esapi
                 logger.Log(
                     candidatePrefix + "DistanceToIsocentreMm",
                     FormatDouble(candidate.DistanceToIsocentreMm));
+            }
+        }
+
+        private static void LogStructureIdSelection(
+            Logger logger,
+            string prefix,
+            StructureIdSelectionResult result)
+        {
+            logger.Log(
+                prefix + "Status",
+                result.IsSelected ? "Selected" : "Unavailable");
+            logger.Log(
+                prefix + "SelectedStructureId",
+                result.IsSelected ? result.SelectedStructureId : "<unavailable>");
+            if (result.IsSelected)
+            {
+                logger.Log(prefix + "Method", result.SelectionMethod);
+            }
+            else
+            {
+                logger.Log(prefix + "FailureReason", result.FailureReason);
+            }
+
+            logger.Log(prefix + "CandidateCount", result.Candidates.Count);
+            for (int index = 0; index < result.Candidates.Count; index++)
+            {
+                StructureIdCandidateDiagnostics candidate = result.Candidates[index];
+                string candidatePrefix = prefix
+                    + "Candidate["
+                    + index.ToString(CultureInfo.InvariantCulture)
+                    + "].";
+                logger.Log(candidatePrefix + "StructureId", candidate.StructureId);
+                logger.Log(
+                    candidatePrefix + "NormalizedStructureId",
+                    candidate.NormalizedStructureId);
+                logger.Log(candidatePrefix + "IsUsable", candidate.IsUsable);
+                logger.Log(
+                    candidatePrefix + "EditDistanceToHeart",
+                    candidate.EditDistance.HasValue
+                        ? candidate.EditDistance.Value.ToString(CultureInfo.InvariantCulture)
+                        : "<not applicable>");
             }
         }
 

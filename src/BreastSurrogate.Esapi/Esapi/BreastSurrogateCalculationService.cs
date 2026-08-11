@@ -16,8 +16,6 @@ namespace BreastSurrogate.Esapi.Esapi
     {
         public const string RequiredField1BeamId = "ANT MED";
         public const string RequiredField2BeamId = "POST LAT";
-        public const string OptionalHeartId = "Heart";
-
         public BreastSurrogateCalculationResult Calculate(EsapiContext context)
         {
             string patientId = context != null && context.pa != null
@@ -44,7 +42,7 @@ namespace BreastSurrogate.Esapi.Esapi
 
             if (field1Matches.Count != 1 || field2Matches.Count != 1)
             {
-                string reason = "Phase 12A requires exactly one treatment beam with ID '"
+                string reason = "BreastSurrogate requires exactly one treatment beam with ID '"
                     + RequiredField1BeamId
                     + "' and exactly one with ID '"
                     + RequiredField2BeamId
@@ -114,23 +112,21 @@ namespace BreastSurrogate.Esapi.Esapi
                     exception.Message);
             }
 
-            Structure heart = context.ss.Structures.FirstOrDefault(
-                structure => string.Equals(
-                    structure.Id,
-                    OptionalHeartId,
-                    StringComparison.OrdinalIgnoreCase));
-            SurrogateMetricResult geometricHif = heart == null
-                ? SurrogateMetricResult.Unavailable(
+            var heartSelector = new HeartStructureSelector();
+            EsapiStructureSelectionResult heartSelection = heartSelector.Select(
+                context.ss.Structures);
+            SurrogateMetricResult geometricHif = heartSelection.IsSelected
+                ? SampleMetric(
                     "gHIF",
-                    null,
-                    "Heart structure with exact ID 'Heart' was not present.")
-                : SampleMetric(
-                    "gHIF",
-                    heart,
+                    heartSelection.SelectedStructure,
                     context.im,
                     field1.Aperture,
                     field2.Aperture,
-                    sampler);
+                    sampler)
+                : SurrogateMetricResult.Unavailable(
+                    "gHIF",
+                    null,
+                    heartSelection.Diagnostics.FailureReason);
 
             return new BreastSurrogateCalculationResult(
                 patientId,
@@ -139,6 +135,7 @@ namespace BreastSurrogate.Esapi.Esapi
                 field1,
                 field2,
                 lungDiagnostics,
+                heartSelection.Diagnostics,
                 geometricIlf,
                 geometricHif,
                 null);
@@ -226,6 +223,7 @@ namespace BreastSurrogate.Esapi.Esapi
                 patientId,
                 planId,
                 treatmentBeamCount,
+                null,
                 null,
                 null,
                 null,

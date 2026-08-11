@@ -1,6 +1,6 @@
 # Phase 12 standalone batch audit implementation plan
 
-**Status:** In progress; milestone 12A complete
+**Status:** In progress; milestone 12A complete, 12B implemented pending Eclipse check
 **Requirements authority:** `docs/batch-audit-requirements.md`  
 **Safety:** Read-only ESAPI operation; sequential patient access; no ARIA modification
 
@@ -124,7 +124,7 @@ diagnostics so the headline values remain easy to find near the end of the log.
 
 ## 4. Milestone 12B — Reusable structure selectors
 
-**Status:** Not started
+**Status:** Implemented; Eclipse diagnostic check pending
 
 Add deterministic selectors for Heart and legacy numerator structures while
 continuing to use `IpsilateralLungSelector` independently for each plan.
@@ -145,16 +145,26 @@ continuing to use `IpsilateralLungSelector` independently for each plan.
 
 ### Tasks
 
-- [ ] Implement pure ID normalization and edit-distance ranking.
-- [ ] Implement ESAPI Heart selection using the tested ranking result.
-- [ ] Implement ILF/HIF substring selectors.
-- [ ] Test exact, case-insensitive, closest, empty, absent, duplicate and tie cases.
-- [ ] Log all candidates, ranking information and the selection reason.
+- [x] Implement pure ID normalization and edit-distance ranking.
+- [x] Implement ESAPI Heart selection using the tested ranking result.
+- [x] Implement ILF/HIF substring selectors.
+- [x] Test exact, case-insensitive, closest, empty, absent, duplicate and tie cases.
+- [x] Log all Heart candidates, ranking information and the selection reason.
+- [x] Confirm Heart candidate/ranking diagnostics in an Eclipse log.
 
 ### Acceptance
 
 Selection is deterministic, collection order cannot affect it, and ambiguity is
 represented explicitly without stopping independent calculations.
+
+Implementation separates pure `StructureIdText`, Heart ranking and strict
+substring selection from thin ESAPI `Structure` adapters. The geometric gHIF
+calculation now uses the Heart selector and returns its complete candidate
+diagnostics without exposing a persistent ESAPI object. Legacy ILF/HIF
+selectors are implemented and tested but are not invoked until milestone 12F
+adds the legacy volume-ratio calculation. Automated validation currently
+passes 57 Core tests and 19 ESAPI-contract tests. Final acceptance remains
+pending a representative Eclipse log showing the Heart selection diagnostics.
 
 ## 5. Milestone 12C — Standalone executable scaffold
 

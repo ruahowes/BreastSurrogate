@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using VMS.TPS.Common.Model.API;
 using VMS.TPS.Common.Model.Types;
 
@@ -139,7 +138,7 @@ namespace BreastSurrogate.Esapi.Esapi
 
         private static bool IsFallbackWholeLungId(string structureId)
         {
-            string normalized = NormalizeStructureId(structureId);
+            string normalized = StructureIdText.Normalize(structureId);
             return normalized == "LUNGL"
                 || normalized == "LLUNG"
                 || normalized == "LEFTLUNG"
@@ -150,25 +149,6 @@ namespace BreastSurrogate.Esapi.Esapi
                 || normalized == "RIGHTLUNG"
                 || normalized == "LUNGRT"
                 || normalized == "RTLUNG";
-        }
-
-        private static string NormalizeStructureId(string structureId)
-        {
-            if (string.IsNullOrWhiteSpace(structureId))
-            {
-                return string.Empty;
-            }
-
-            var normalized = new StringBuilder(structureId.Length);
-            foreach (char character in structureId)
-            {
-                if (char.IsLetterOrDigit(character))
-                {
-                    normalized.Append(char.ToUpperInvariant(character));
-                }
-            }
-
-            return normalized.ToString();
         }
 
         private static bool IsUsable(Structure structure)

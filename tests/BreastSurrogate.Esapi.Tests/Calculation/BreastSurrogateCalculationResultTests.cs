@@ -59,6 +59,7 @@ namespace BreastSurrogate.Esapi.Tests.Calculation
                 null,
                 null,
                 null,
+                null,
                 geometricIlf,
                 geometricHif,
                 sharedFailureReason);

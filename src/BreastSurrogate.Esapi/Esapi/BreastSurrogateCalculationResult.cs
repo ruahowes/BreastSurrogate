@@ -27,6 +27,7 @@ namespace BreastSurrogate.Esapi.Esapi
             SelectedBeamCalculation field1,
             SelectedBeamCalculation field2,
             IpsilateralLungSelectionDiagnostics lungSelection,
+            StructureIdSelectionResult heartSelection,
             SurrogateMetricResult geometricIlf,
             SurrogateMetricResult geometricHif,
             string sharedFailureReason)
@@ -52,6 +53,7 @@ namespace BreastSurrogate.Esapi.Esapi
             Field1 = field1;
             Field2 = field2;
             LungSelection = lungSelection;
+            HeartSelection = heartSelection;
             GeometricIlf = geometricIlf;
             GeometricHif = geometricHif;
             SharedFailureReason = sharedFailureReason;
@@ -73,6 +75,8 @@ namespace BreastSurrogate.Esapi.Esapi
         }
 
         public IpsilateralLungSelectionDiagnostics LungSelection { get; private set; }
+
+        public StructureIdSelectionResult HeartSelection { get; private set; }
 
         public SurrogateMetricResult GeometricIlf { get; private set; }
 
