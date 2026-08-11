@@ -37,6 +37,12 @@ namespace BreastSurrogate.Batch.Tests
             writer.WriteRow(row);
 
             string csv = output.ToString();
+            StringAssert.Contains(
+                csv,
+                "ClinicalDiscoveryStatus,ClinicalDiscoveryMethod,ClinicalDiscoveryReason," +
+                "PhysicsDiscoveryStatus,PhysicsDiscoveryMethod,PhysicsDiscoveryReason," +
+                "ClinicalIsocentreXmm,ClinicalIsocentreYmm,ClinicalIsocentreZmm," +
+                "ClinicalIsocentreReason");
             StringAssert.Contains(csv, "gILF_ValuePercent,gILF_Unit,gILF_Status,gILF_Reason");
             StringAssert.Contains(csv, "\"Patient, One\"");
             StringAssert.Contains(csv, "12.75,%,Available,");

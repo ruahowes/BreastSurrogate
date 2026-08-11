@@ -1,6 +1,6 @@
 # Phase 12 standalone batch audit implementation plan
 
-**Status:** In progress; milestones 12A-12C complete, 12D implemented pending interactive check
+**Status:** In progress; milestones 12A-12D complete, 12E implemented
 **Requirements authority:** `docs/batch-audit-requirements.md`  
 **Safety:** Read-only ESAPI operation; sequential patient access; no ARIA modification
 
@@ -226,7 +226,7 @@ Varian Interface DLLs or combine public assemblies from different releases.
 
 ## 6. Milestone 12D — Configuration and table I/O
 
-**Status:** Implemented; interactive input check pending
+**Status:** Complete
 
 Use a command line conceptually equivalent to:
 
@@ -255,7 +255,7 @@ set suitable for deployment on the hospital network.
 - [x] Default output to the log directory, allowing a similar approved directory.
 - [x] Test quoting, commas, blank overrides, invalid JSON and invalid metric requests.
 - [x] Permit interactive entry of file paths or directories after a no-argument launch.
-- [ ] Confirm the interactive prompts and validation summary in the hospital environment.
+- [x] Confirm the interactive prompts and validation summary in the hospital environment.
 
 ### Acceptance
 
@@ -274,12 +274,14 @@ A no-argument launch now prompts for the patient CSV and JSON config. Each
 entry may be a full filename or a directory containing `patients.csv` or
 `config.json`; command-line arguments accept the same directory shorthand.
 Copy-ready inputs are in `docs/batch-example`. Automated validation currently
-passes 57 Core, 19 ESAPI-contract and 28 Batch tests. Actual patient opening and
-result-row production remain milestones 12E-12G.
+passes 57 Core, 19 ESAPI-contract and 44 Batch tests. The interactive input and
+ESAPI startup path was confirmed from within the hospital Citrix environment on
+11 August 2026. Actual patient opening and result-row production remain
+milestones 12F-12G.
 
 ## 7. Milestone 12E — Deterministic plan discovery
 
-**Status:** Not started
+**Status:** Implemented; live-patient integration is deferred to 12G
 
 Resolve the clinical and physics branches independently after opening a patient.
 
@@ -305,17 +307,32 @@ tolerance used when deciding whether treatment-beam isocentres are distinct.
 
 ### Tasks
 
-- [ ] Implement case-insensitive planning-course discovery and exact overrides.
-- [ ] Implement reviewed/rejected approval-status checks.
-- [ ] Implement complete-token PPHYS/PHYS matching and exact overrides.
-- [ ] Implement single-distinct-isocentre validation for the reviewed plan.
-- [ ] Record every candidate and the final discovery reason.
-- [ ] Test missing, unique, ambiguous and overridden cases.
+- [x] Implement case-insensitive planning-course discovery and exact overrides.
+- [x] Implement reviewed/rejected approval-status checks.
+- [x] Implement complete-token PPHYS/PHYS matching and exact overrides.
+- [x] Implement single-distinct-isocentre validation for the reviewed plan.
+- [x] Record every candidate and the final discovery reason.
+- [x] Test missing, unique, ambiguous and overridden cases.
 
 ### Acceptance
 
 No plan is chosen by collection order, date, display state or unsupported fuzzy
 matching. A failure in one branch does not prevent the other branch from running.
+
+Implementation snapshots only course IDs, external-plan IDs, approval states and
+non-setup treatment-beam isocentres from ESAPI before applying pure discovery
+rules. Exact CSV overrides are case-sensitive. Automatic `PLANNING`, `PHYS` and
+`PPHYS` matching is case-insensitive; physics tokens must be complete configured
+tokens. The clinical and physics branches produce independent status, method,
+reason and candidate diagnostics.
+
+Reviewed-plan treatment-beam isocentres are treated as one isocentre when every
+pair lies within `0.01 mm`; the deterministic reference is their coordinate-wise
+mean. No treatment-beam isocentre or a separation above that tolerance is
+unsupported, while retaining the resolved course and plan IDs for diagnosis.
+The output schema reserves discovery and clinical-isocentre provenance columns.
+Pure discovery behavior is covered by Batch tests; opening patients, mapping the
+selected IDs back to ESAPI plans and writing populated rows remain milestone 12G.
 
 ## 8. Milestone 12F — Legacy and clinical metrics
 

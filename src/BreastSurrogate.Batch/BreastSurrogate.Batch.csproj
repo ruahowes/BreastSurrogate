@@ -53,8 +53,10 @@
     <Compile Include="BatchOutputCsv.cs" />
     <Compile Include="ConsoleProgressReporter.cs" />
     <Compile Include="CsvCodec.cs" />
+    <Compile Include="EsapiDiscoverySnapshotFactory.cs" />
     <Compile Include="InteractiveInput.cs" />
     <Compile Include="PatientInputCsv.cs" />
+    <Compile Include="PlanDiscovery.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

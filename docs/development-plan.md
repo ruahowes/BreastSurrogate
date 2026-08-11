@@ -610,8 +610,20 @@ explicit unavailable status/reason fields. Inputs are validated before ESAPI
 startup. A no-argument launch prompts for the CSV and JSON paths; both the
 prompts and command line accept a full filename or a directory containing the
 conventional `patients.csv` or `config.json`. Copy-ready examples live in
-`docs/batch-example`. The remaining 12D check is a hospital-environment run
-through the new interactive input prompts.
+`docs/batch-example`. The interactive input and ESAPI startup path completed
+successfully from within the hospital Citrix environment on 11 August 2026, so
+milestone 12D is complete.
+
+Milestone 12E is implemented as deterministic, independently evaluated clinical
+and physics discovery over small immutable snapshots. Automatic planning-course
+and complete-token PHYS/PPHYS matching is case-insensitive; exact CSV overrides
+are case-sensitive and multiple reviewed plans are never chosen heuristically.
+Only non-setup treatment-beam isocentres are considered. Every pair must be
+within `0.01 mm`; otherwise the reviewed plan is retained for diagnostics but
+clinical DVH extraction is marked unsupported. Discovery status, selection
+method, reason and clinical-isocentre provenance have stable output columns.
+The pure discovery cases are tested; live patient opening and selected-plan
+mapping remain part of the fault-isolated orchestration in milestone 12G.
 
 ### Input and execution
 
