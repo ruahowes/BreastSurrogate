@@ -1,6 +1,6 @@
 # Phase 12 standalone batch audit implementation plan
 
-**Status:** In progress; milestones 12A-12D complete, 12E implemented
+**Status:** In progress; milestones 12A-12D complete, 12E-12F implemented
 **Requirements authority:** `docs/batch-audit-requirements.md`  
 **Safety:** Read-only ESAPI operation; sequential patient access; no ARIA modification
 
@@ -277,7 +277,7 @@ Copy-ready inputs are in `docs/batch-example`. Automated validation currently
 passes 57 Core, 19 ESAPI-contract and 44 Batch tests. The interactive input and
 ESAPI startup path was confirmed from within the hospital Citrix environment on
 11 August 2026. Actual patient opening and result-row production remain
-milestones 12F-12G.
+milestone 12G.
 
 ## 7. Milestone 12E — Deterministic plan discovery
 
@@ -336,7 +336,7 @@ selected IDs back to ESAPI plans and writing populated rows remain milestone 12G
 
 ## 8. Milestone 12F — Legacy and clinical metrics
 
-**Status:** Not started
+**Status:** Implemented; patient-loop wiring remains in 12G and live validation in 12H
 
 ### Physics plan
 
@@ -355,19 +355,43 @@ selected IDs back to ESAPI plans and writing populated rows remain milestone 12G
 
 ### Tasks
 
-- [ ] Implement the generic DVH evaluator in the shared library or locally
+- [x] Implement the generic DVH evaluator in the shared library or locally
       according to the decision in section 2.
-- [ ] Implement legacy volume-ratio evaluation with denominator validation.
-- [ ] Implement the three initial configured DVH metrics.
-- [ ] Keep physics-plan and reviewed-plan structures strictly separate.
-- [ ] Return a status/reason for null dose, null DVH and invalid values.
-- [ ] Test metric request dispatch and unit normalization independently of ESAPI
+- [x] Implement legacy volume-ratio evaluation with denominator validation.
+- [x] Implement the three initial configured DVH metrics.
+- [x] Keep physics-plan and reviewed-plan structures strictly separate.
+- [x] Return a status/reason for null dose, null DVH and invalid values.
+- [x] Test metric request dispatch and unit normalization independently of ESAPI
       where possible.
 
 ### Acceptance
 
 Every requested value is either a finite value with an explicit unit or an
 unavailable outcome with a specific reason; unavailable values never become zero.
+
+The generic evaluator is implemented locally in `BreastSurrogate.Esapi` behind
+an ESAPI-independent `IDvhDataSource` boundary so it can later move to
+`Uclh.XRT.Library` without taking BreastSurrogate naming or output conventions
+with it. Its thin ESAPI adapter uses the documented `PlanningItem` cumulative
+DVH, volume-at-dose and dose-at-volume methods. It supports `Dmean`, `VGy(%)`,
+`VGy(cc)`, `Dcc(Gy)` and `D%(Gy)`, normalizes Gy/cGy results to Gy and records
+the native dose unit.
+
+`PhysicsPlanMetricService` constructs `EsapiContext(patient, physicsPlan)` and
+returns the existing structured gILF/gHIF result together with independent
+legacy ILF/HIF volume ratios. Legacy numerator, lung and Heart structures are
+selected only from that physics plan. `ReviewedPlanMetricService` independently
+selects lung and Heart only from the supplied reviewed plan's structure set,
+records `PlanSetup.NumberOfFractions`, and evaluates the mapped JSON requests.
+Missing dose, null DVH, missing or ambiguous structures, unsupported dose units,
+query exceptions and invalid values become metric-level unavailable results.
+
+Automated validation passes 57 Core, 29 ESAPI-contract and 45 Batch tests. The
+new tests cover all five request forms, dispatch, cGy-to-Gy conversion, native
+units, null DVH, missing dose, query exceptions, invalid values, legacy ratios
+and JSON-to-evaluator request mapping. Mapping discovered live plans into these
+services and exporting their results remains milestone 12G; comparison with
+Eclipse DVH values remains milestone 12H.
 
 ## 9. Milestone 12G — Patient loop, fault isolation and export
 

@@ -61,6 +61,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AuditDvhMetricRequestMapperTests.cs" />
     <Compile Include="BatchConfigurationTests.cs" />
     <Compile Include="BatchCommandLineTests.cs" />
     <Compile Include="BatchOutputCsvTests.cs" />
@@ -75,6 +76,10 @@
     <ProjectReference Include="..\..\src\BreastSurrogate.Batch\BreastSurrogate.Batch.csproj">
       <Project>{7606E4F6-5379-4F78-9D4B-2B03C1035A9D}</Project>
       <Name>BreastSurrogate.Batch</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\src\BreastSurrogate.Esapi\BreastSurrogate.Esapi.csproj">
+      <Project>{3B707FF8-E95A-46EB-A62F-3BB1D5CC08DF}</Project>
+      <Name>BreastSurrogate.Esapi</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

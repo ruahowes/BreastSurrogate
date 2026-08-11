@@ -61,10 +61,17 @@
     <Compile Include="Esapi\BreastSurrogateCalculationResult.cs" />
     <Compile Include="Esapi\BreastSurrogateCalculationService.cs" />
     <Compile Include="Esapi\BreastSurrogateRunner.cs" />
+    <Compile Include="Esapi\DvhMetricEvaluator.cs" />
     <Compile Include="Esapi\EsapiBeamGeometryFactory.cs" />
+    <Compile Include="Esapi\EsapiDvhDataSource.cs" />
     <Compile Include="Esapi\IpsilateralLungSelectionException.cs" />
     <Compile Include="Esapi\IpsilateralLungSelectionResult.cs" />
     <Compile Include="Esapi\IpsilateralLungSelector.cs" />
+    <Compile Include="Esapi\LegacyStructureMetricService.cs" />
+    <Compile Include="Esapi\LegacyVolumeRatioEvaluator.cs" />
+    <Compile Include="Esapi\MetricCalculationResult.cs" />
+    <Compile Include="Esapi\PhysicsPlanMetricService.cs" />
+    <Compile Include="Esapi\ReviewedPlanMetricService.cs" />
     <Compile Include="Esapi\StructureVoxelSampler.cs" />
     <Compile Include="Esapi\StructureVoxelSamplingException.cs" />
     <Compile Include="Esapi\StructureVoxelSamplingResult.cs" />

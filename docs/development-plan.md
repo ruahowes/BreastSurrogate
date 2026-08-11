@@ -585,7 +585,7 @@ log after detailed structure sampling.
 
 Milestone 12B is implemented with pure deterministic Heart and ILF/HIF ID
 selection plus thin read-only ESAPI adapters. Heart selection is active for
-gHIF; legacy selectors remain dormant until the Phase 12F volume-ratio work.
+gHIF; the legacy selectors are now also used by the Phase 12F volume-ratio work.
 Inspection of the representative Eclipse log on 11 August 2026 confirmed the
 Heart candidate/ranking diagnostics and completed milestone 12B.
 
@@ -624,6 +624,20 @@ clinical DVH extraction is marked unsupported. Discovery status, selection
 method, reason and clinical-isocentre provenance have stable output columns.
 The pure discovery cases are tested; live patient opening and selected-plan
 mapping remain part of the fault-isolated orchestration in milestone 12G.
+
+Milestone 12F is implemented locally within BreastSurrogate. A generic,
+ESAPI-independent DVH request/evaluation boundary in `BreastSurrogate.Esapi`
+supports Dmean, VGy(%), VGy(cc), Dcc(Gy) and D%(Gy); a thin documented-API
+adapter performs the live `PlanningItem` queries. Dose results are normalized
+from Gy or cGy to Gy while retaining their native unit. Missing dose or DVH,
+invalid values, unsupported units and query exceptions produce explicit
+metric-level failures rather than zero values. Physics-plan aggregation uses
+`EsapiContext(patient, physicsPlan)` for gILF/gHIF and selects legacy ILF/HIF
+numerators and denominators only from that physics plan. Reviewed-plan metrics
+resolve lung and Heart afresh within the reviewed plan's own structure set and
+record `PlanSetup.NumberOfFractions`. Patient-loop wiring/export remains 12G,
+and Eclipse agreement checks remain 12H. The generic evaluator can be moved to
+`Uclh.XRT.Library` later with its existing tests if it proves reusable.
 
 ### Input and execution
 

@@ -47,7 +47,8 @@ namespace BreastSurrogate.Esapi.Esapi
                 throw new IpsilateralLungSelectionException(
                     "More than one structure matches preferred ID '"
                     + PreferredStructureId
-                    + "' case-insensitively.");
+                    + "' case-insensitively.",
+                    IpsilateralLungSelectionFailureKind.Ambiguous);
             }
 
             if (preferredMatches.Count == 1)
@@ -81,7 +82,8 @@ namespace BreastSurrogate.Esapi.Esapi
                     + LeftLungStructureId
                     + "', 'L Lung', '"
                     + RightLungStructureId
-                    + "', or 'R Lung'.");
+                    + "', or 'R Lung'.",
+                    IpsilateralLungSelectionFailureKind.MissingData);
             }
 
             if (candidates.Count > 1
@@ -96,7 +98,8 @@ namespace BreastSurrogate.Esapi.Esapi
                     + candidates[1].Structure.Id
                     + "' have centres equally close to isocentre within "
                     + DistanceTieToleranceMm
-                    + " mm.");
+                    + " mm.",
+                    IpsilateralLungSelectionFailureKind.Ambiguous);
             }
 
             return new IpsilateralLungSelectionResult(
@@ -116,7 +119,8 @@ namespace BreastSurrogate.Esapi.Esapi
                 throw new IpsilateralLungSelectionException(
                     "Preferred structure '"
                     + structure.Id
-                    + "' is empty or has no segment.");
+                    + "' is empty or has no segment.",
+                    IpsilateralLungSelectionFailureKind.MissingData);
             }
 
             VVector centerPoint = structure.CenterPoint;
