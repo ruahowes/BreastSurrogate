@@ -1,6 +1,6 @@
 # Phase 12 standalone batch audit implementation plan
 
-**Status:** In progress; milestone 12A implemented, Eclipse regression check pending
+**Status:** In progress; milestone 12A complete
 **Requirements authority:** `docs/batch-audit-requirements.md`  
 **Safety:** Read-only ESAPI operation; sequential patient access; no ARIA modification
 
@@ -74,7 +74,7 @@ No additional generic application/context wrapper is currently required.
 
 ## 3. Milestone 12A — Structured surrogate service
 
-**Status:** Implemented; Eclipse regression check pending
+**Status:** Complete
 
 Refactor `BreastSurrogateRunner` so calculation and presentation are separate.
 Add a presentation-free service with a boundary conceptually equivalent to:
@@ -106,7 +106,7 @@ geometric metrics unavailable because they share that dependency.
 - [x] Preserve existing diagnostic values and exception details.
 - [x] Add tests for all new ESAPI-independent result/status behavior.
 - [x] Run the complete Core test suite and build the solution.
-- [ ] Confirm unchanged Eclipse percentages and equivalent logs.
+- [x] Confirm unchanged Eclipse percentages and equivalent logs.
 
 ### Acceptance
 
@@ -117,9 +117,10 @@ Implementation added `BreastSurrogateCalculationService`, immutable structured
 calculation/metric results and a separate ESAPI-contract test project. The
 service contains no message-box, logger or file-output dependency and returns
 no persistent ESAPI API object. Automated validation currently passes 57 Core
-tests and 6 structured-result tests. Final acceptance remains pending until a
-representative Eclipse run confirms unchanged percentages and equivalent
-diagnostic content.
+tests and 6 structured-result tests. Eclipse regression on 11 August 2026
+confirmed unchanged gILF/gHIF percentages and equivalent diagnostic content.
+The compact `Results.*` metric summary is emitted after the detailed sampling
+diagnostics so the headline values remain easy to find near the end of the log.
 
 ## 4. Milestone 12B — Reusable structure selectors
 

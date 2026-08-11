@@ -67,6 +67,7 @@ namespace BreastSurrogate.Esapi.Esapi
                 }
 
                 LogCalculationResult(logger, context, result);
+                LogResultsSummary(logger, result);
 
                 if (!string.IsNullOrWhiteSpace(result.SharedFailureReason))
                 {
@@ -199,8 +200,6 @@ namespace BreastSurrogate.Esapi.Esapi
                 LogIpsilateralLungSelection(logger, result.LungSelection);
             }
 
-            LogMetricStatus(logger, "Phase9.gILF", result.GeometricIlf);
-            LogMetricStatus(logger, "Phase9.gHIF", result.GeometricHif);
             logger.Log(
                 "Phase9.IpsilateralLungStatus",
                 FormatStructureStatus(result.GeometricIlf));
@@ -259,7 +258,16 @@ namespace BreastSurrogate.Esapi.Esapi
                 structureIndex);
         }
 
-        private static void LogMetricStatus(
+        private static void LogResultsSummary(
+            Logger logger,
+            BreastSurrogateCalculationResult result)
+        {
+            logger.Log("Results.OverallStatus", FormatCalculationStatus(result.Status));
+            LogMetricResult(logger, "Results.gILF.", result.GeometricIlf);
+            LogMetricResult(logger, "Results.gHIF.", result.GeometricHif);
+        }
+
+        private static void LogMetricResult(
             Logger logger,
             string prefix,
             SurrogateMetricResult metric)
@@ -273,11 +281,11 @@ namespace BreastSurrogate.Esapi.Esapi
 
             if (metric.IsAvailable)
             {
-                logger.Log(prefix + "Percent", FormatDouble(metric.Value.Value));
+                logger.Log(prefix + "ValuePercent", FormatDouble(metric.Value.Value));
             }
             else
             {
-                logger.Log(prefix + "Percent", "<unavailable>");
+                logger.Log(prefix + "ValuePercent", "<unavailable>");
                 logger.Log(prefix + "FailureReason", metric.FailureReason);
             }
         }
