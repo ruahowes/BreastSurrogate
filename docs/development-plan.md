@@ -639,6 +639,19 @@ record `PlanSetup.NumberOfFractions`. Patient-loop wiring/export remains 12G,
 and Eclipse agreement checks remain 12H. The generic evaluator can be moved to
 `Uclh.XRT.Library` later with its existing tests if it proves reusable.
 
+Milestone 12G is implemented as a sequential STA patient loop with a disposable
+live-patient session boundary. Each successfully opened patient is closed by one
+`Application.ClosePatient()` attempt in `finally`; copied results are then
+written to a timestamped CSV and flushed immediately. Clinical and physics
+branches run independently, and expected patient, discovery, geometry,
+structure, dose or metric failures remain explicit row outcomes without
+stopping later patients or changing the successful summary exit code. The run
+also produces indexed per-patient logs, a batch log and console progress.
+Clinical and physics lung/Heart IDs have separate output columns. Automated
+tests verify continuation after failure, missing-patient rows, partial metrics,
+stable output and exactly one disposal per opened session. Hospital lifecycle
+and Eclipse-value validation remain milestone 12H.
+
 ### Input and execution
 
 Use an explicit input table containing at minimum:

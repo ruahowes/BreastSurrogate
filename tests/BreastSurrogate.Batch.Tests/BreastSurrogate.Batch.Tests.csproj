@@ -68,6 +68,7 @@
     <Compile Include="ConsoleProgressReporterTests.cs" />
     <Compile Include="InteractiveInputTests.cs" />
     <Compile Include="PatientInputCsvTests.cs" />
+    <Compile Include="PatientAuditProcessorTests.cs" />
     <Compile Include="PlanDiscoveryTests.cs" />
     <Compile Include="ProgramTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

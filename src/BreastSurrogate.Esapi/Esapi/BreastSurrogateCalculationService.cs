@@ -109,6 +109,7 @@ namespace BreastSurrogate.Esapi.Esapi
                 geometricIlf = SurrogateMetricResult.Unavailable(
                     "gILF",
                     null,
+                    LegacyStructureMetricService.MapLungFailure(exception),
                     exception.Message);
             }
 
@@ -126,6 +127,8 @@ namespace BreastSurrogate.Esapi.Esapi
                 : SurrogateMetricResult.Unavailable(
                     "gHIF",
                     null,
+                    LegacyStructureMetricService.MapIdSelectionFailure(
+                        heartSelection.Diagnostics),
                     heartSelection.Diagnostics.FailureReason);
 
             return new BreastSurrogateCalculationResult(
@@ -165,6 +168,7 @@ namespace BreastSurrogate.Esapi.Esapi
                 return SurrogateMetricResult.Unavailable(
                     metricName,
                     structure.Id,
+                    MetricCalculationStatus.CalculationFailed,
                     exception.Message);
             }
         }
@@ -227,8 +231,10 @@ namespace BreastSurrogate.Esapi.Esapi
                 null,
                 null,
                 null,
-                SurrogateMetricResult.Unavailable("gILF", null, reason),
-                SurrogateMetricResult.Unavailable("gHIF", null, reason),
+                SurrogateMetricResult.Unavailable(
+                    "gILF", null, MetricCalculationStatus.Unsupported, reason),
+                SurrogateMetricResult.Unavailable(
+                    "gHIF", null, MetricCalculationStatus.Unsupported, reason),
                 reason);
         }
 

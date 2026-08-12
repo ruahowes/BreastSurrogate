@@ -21,6 +21,7 @@ namespace BreastSurrogate.Esapi.Esapi
             double? value,
             string unit,
             string failureReason,
+            MetricCalculationStatus failureStatus,
             StructureVoxelSamplingResult samplingResult)
         {
             if (string.IsNullOrWhiteSpace(metricName))
@@ -34,6 +35,7 @@ namespace BreastSurrogate.Esapi.Esapi
             Value = value;
             Unit = unit;
             FailureReason = failureReason;
+            FailureStatus = failureStatus;
             SamplingResult = samplingResult;
         }
 
@@ -53,6 +55,8 @@ namespace BreastSurrogate.Esapi.Esapi
         public string Unit { get; private set; }
 
         public string FailureReason { get; private set; }
+
+        public MetricCalculationStatus FailureStatus { get; private set; }
 
         public StructureVoxelSamplingResult SamplingResult { get; private set; }
 
@@ -82,6 +86,7 @@ namespace BreastSurrogate.Esapi.Esapi
                 value,
                 "%",
                 null,
+                MetricCalculationStatus.Available,
                 samplingResult);
         }
 
@@ -90,6 +95,26 @@ namespace BreastSurrogate.Esapi.Esapi
             string structureId,
             string failureReason)
         {
+            return Unavailable(
+                metricName,
+                structureId,
+                MetricCalculationStatus.CalculationFailed,
+                failureReason);
+        }
+
+        public static SurrogateMetricResult Unavailable(
+            string metricName,
+            string structureId,
+            MetricCalculationStatus failureStatus,
+            string failureReason)
+        {
+            if (failureStatus == MetricCalculationStatus.Available)
+            {
+                throw new ArgumentException(
+                    "An unavailable metric cannot have Available failure status.",
+                    "failureStatus");
+            }
+
             if (string.IsNullOrWhiteSpace(failureReason))
             {
                 throw new ArgumentException(
@@ -104,6 +129,7 @@ namespace BreastSurrogate.Esapi.Esapi
                 null,
                 null,
                 failureReason,
+                failureStatus,
                 null);
         }
     }

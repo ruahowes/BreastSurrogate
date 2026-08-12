@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
+using System.Reflection;
+using System.Text;
 using VMS.TPS.Common.Model.API;
 
 namespace BreastSurrogate.Batch
@@ -91,7 +94,7 @@ namespace BreastSurrogate.Batch
             }
             catch (Exception exception)
             {
-                Console.Error.WriteLine("ESAPI application startup or shutdown failed.");
+                Console.Error.WriteLine("Fatal ESAPI startup, batch output, or shutdown failure.");
                 Console.Error.WriteLine(exception.GetType().FullName + ": " + exception.Message);
                 exitCode = ApplicationStartupFailureExitCode;
             }
@@ -124,12 +127,115 @@ namespace BreastSurrogate.Batch
             using (Application application = Application.CreateApplication())
             {
                 Console.WriteLine("ESAPI application initialized successfully.");
-                Console.WriteLine(
-                    "Phase 12D input scaffold only: no patient was opened and no ARIA data was modified.");
+                if (options == null)
+                {
+                    Console.WriteLine(
+                        "Startup check only: no patient was opened and no ARIA data was modified.");
+                }
+                else
+                {
+                    RunBatch(application, configuration, patientRows);
+                }
             }
 
             Console.WriteLine("ESAPI application disposed successfully.");
             return SuccessExitCode;
+        }
+
+        private static void RunBatch(
+            Application application,
+            BatchConfiguration configuration,
+            IList<PatientInputRow> patientRows)
+        {
+            string runId = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff", CultureInfo.InvariantCulture);
+            string outputPath = Path.Combine(
+                configuration.OutputDirectory,
+                "BreastSurrogateAudit_" + runId + ".csv");
+            string batchLogPath = Path.Combine(
+                configuration.LogDirectory,
+                "BreastSurrogateAudit_" + runId + ".log");
+            string applicationVersion = Assembly.GetExecutingAssembly()
+                .GetName()
+                .Version
+                .ToString();
+
+            Console.WriteLine("Output CSV: " + outputPath);
+            Console.WriteLine("Batch log: " + batchLogPath);
+            var utf8 = new UTF8Encoding(false);
+            using (var outputStream = new FileStream(
+                outputPath,
+                FileMode.CreateNew,
+                FileAccess.Write,
+                FileShare.Read))
+            using (var outputWriter = new StreamWriter(outputStream, utf8))
+            using (var logStream = new FileStream(
+                batchLogPath,
+                FileMode.CreateNew,
+                FileAccess.Write,
+                FileShare.Read))
+            using (var batchLog = new StreamWriter(logStream, utf8))
+            {
+                var csv = new BatchOutputCsvWriter(
+                    outputWriter,
+                    BatchOutputSchema.Create(configuration));
+                var progress = new ConsoleProgressReporter(
+                    Console.Out,
+                    !Console.IsOutputRedirected);
+                var runner = new BatchAuditRunner();
+                BatchRunSummary summary = runner.Run(
+                    patientRows,
+                    configuration,
+                    applicationVersion,
+                    new EsapiPatientAuditSource(application),
+                    csv,
+                    batchLog,
+                    (index, input, lines) => WritePatientLog(
+                        configuration.LogDirectory,
+                        runId,
+                        index,
+                        input,
+                        lines,
+                        utf8),
+                    progress);
+
+                Console.WriteLine("Batch completed.");
+                Console.WriteLine("Rows: " + summary.TotalRows);
+                Console.WriteLine("Fully available: " + summary.SuccessfulRows);
+                Console.WriteLine("With unavailable values: " + summary.RowsWithFailures);
+            }
+        }
+
+        private static void WritePatientLog(
+            string directory,
+            string runId,
+            int index,
+            PatientInputRow input,
+            IList<string> lines,
+            Encoding encoding)
+        {
+            string path = Path.Combine(
+                directory,
+                "BreastSurrogateAudit_"
+                    + runId
+                    + "_"
+                    + (index + 1).ToString("0000", CultureInfo.InvariantCulture)
+                    + "_"
+                    + SanitizeFileName(input.PatientId)
+                    + ".log");
+            File.WriteAllLines(path, lines, encoding);
+        }
+
+        internal static string SanitizeFileName(string value)
+        {
+            var invalid = new HashSet<char>(Path.GetInvalidFileNameChars());
+            var safe = new StringBuilder();
+            foreach (char character in value ?? string.Empty)
+            {
+                safe.Append(invalid.Contains(character) ? '_' : character);
+            }
+
+            string result = safe.ToString().Trim().TrimEnd('.');
+            return result.Length == 0 ? "patient" : result;
         }
 
         internal static bool ShouldPauseAfterInvalidInput(

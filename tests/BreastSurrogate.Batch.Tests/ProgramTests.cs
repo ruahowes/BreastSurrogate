@@ -36,5 +36,14 @@ namespace BreastSurrogate.Batch.Tests
                 false,
                 true));
         }
+
+        [TestMethod]
+        public void PatientIdIsSanitizedForPerPatientLogFile()
+        {
+            string sanitized = Program.SanitizeFileName("PAT/01");
+
+            Assert.IsFalse(sanitized.Contains("/"));
+            Assert.AreNotEqual(string.Empty, sanitized);
+        }
     }
 }

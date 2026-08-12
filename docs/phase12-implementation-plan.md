@@ -1,6 +1,6 @@
 # Phase 12 standalone batch audit implementation plan
 
-**Status:** In progress; milestones 12A-12D complete, 12E-12F implemented
+**Status:** In progress; milestones 12A-12G implemented, 12H validation pending
 **Requirements authority:** `docs/batch-audit-requirements.md`  
 **Safety:** Read-only ESAPI operation; sequential patient access; no ARIA modification
 
@@ -196,7 +196,7 @@ assemblies. Do not copy those differences into the production project.
 - [x] Add command-line validation and a non-zero process exit code for fatal
       startup/configuration failures.
 - [x] Add a console progress reporter suitable for interactive and redirected
-      output, ready to connect to the patient loop in milestone 12G.
+      output; connect it to the patient loop in milestone 12G.
 - [x] Confirm startup and clean exit in the supported standalone ESAPI environment.
 
 ### Acceptance
@@ -213,7 +213,7 @@ without requiring placeholder input files. It deliberately does not open a
 patient. The supplied
 `docs/ConsoleUtility.cs` informed a tested ASCII progress reporter that updates
 one console line interactively and emits durable lines when output is
-redirected; patient-by-patient reporting will be wired in during milestone 12G.
+redirected; milestone 12G now uses it for patient-by-patient reporting.
 The hospital-network check on 11 August 2026 confirmed successful ESAPI
 application creation and disposal, completing milestone 12C.
 
@@ -276,12 +276,12 @@ entry may be a full filename or a directory containing `patients.csv` or
 Copy-ready inputs are in `docs/batch-example`. Automated validation currently
 passes 57 Core, 19 ESAPI-contract and 44 Batch tests. The interactive input and
 ESAPI startup path was confirmed from within the hospital Citrix environment on
-11 August 2026. Actual patient opening and result-row production remain
-milestone 12G.
+11 August 2026. Patient opening and durable result-row production are now
+implemented by milestone 12G.
 
 ## 7. Milestone 12E — Deterministic plan discovery
 
-**Status:** Implemented; live-patient integration is deferred to 12G
+**Status:** Complete
 
 Resolve the clinical and physics branches independently after opening a patient.
 
@@ -331,12 +331,13 @@ pair lies within `0.01 mm`; the deterministic reference is their coordinate-wise
 mean. No treatment-beam isocentre or a separation above that tolerance is
 unsupported, while retaining the resolved course and plan IDs for diagnosis.
 The output schema reserves discovery and clinical-isocentre provenance columns.
-Pure discovery behavior is covered by Batch tests; opening patients, mapping the
-selected IDs back to ESAPI plans and writing populated rows remain milestone 12G.
+Pure discovery behavior is covered by Batch tests. Milestone 12G now opens each
+patient sequentially, maps the selected IDs back to ESAPI plans and writes the
+populated result row.
 
 ## 8. Milestone 12F — Legacy and clinical metrics
 
-**Status:** Implemented; patient-loop wiring remains in 12G and live validation in 12H
+**Status:** Complete; live value agreement remains in 12H
 
 ### Physics plan
 
@@ -389,13 +390,13 @@ query exceptions and invalid values become metric-level unavailable results.
 Automated validation passes 57 Core, 29 ESAPI-contract and 45 Batch tests. The
 new tests cover all five request forms, dispatch, cGy-to-Gy conversion, native
 units, null DVH, missing dose, query exceptions, invalid values, legacy ratios
-and JSON-to-evaluator request mapping. Mapping discovered live plans into these
-services and exporting their results remains milestone 12G; comparison with
-Eclipse DVH values remains milestone 12H.
+and JSON-to-evaluator request mapping. Milestone 12G now maps discovered live
+plans into these services and exports their results; comparison with Eclipse
+DVH values remains milestone 12H.
 
 ## 9. Milestone 12G — Patient loop, fault isolation and export
 
-**Status:** Not started
+**Status:** Implemented; hospital integration validation remains in 12H
 
 Process patients sequentially. ESAPI object access remains on the STA thread.
 The loop should follow this lifecycle:
@@ -432,17 +433,45 @@ The initial flat table contains:
 
 ### Tasks
 
-- [ ] Implement dependency-aware calculation orchestration.
-- [ ] Guarantee `Application.ClosePatient()` in `finally` after every successful open.
-- [ ] Write and flush results after each patient for crash recovery.
-- [ ] Write per-patient logs and a batch summary in the controlled directory.
-- [ ] Return a summary exit code without treating expected row failures as a crash.
-- [ ] Test dependency combinations and stable output ordering.
+- [x] Implement dependency-aware calculation orchestration.
+- [x] Guarantee `Application.ClosePatient()` in `finally` after every successful open.
+- [x] Write and flush results after each patient for crash recovery.
+- [x] Write per-patient logs and a batch summary in the controlled directory.
+- [x] Return a summary exit code without treating expected row failures as a crash.
+- [x] Test dependency combinations and stable output ordering.
 
 ### Acceptance
 
 A row-level failure cannot stop later patients, no ESAPI object is accessed after
 patient closure, and every opened patient is closed exactly once.
+
+The executable now creates a timestamped result CSV and batch log before opening
+the first patient, then processes the validated input rows sequentially on the
+STA thread. `EsapiPatientAuditSession` is the only live-patient boundary. The
+runner attempts to dispose each successfully opened session exactly once in a
+`finally` block, which calls the documented `Application.ClosePatient()` before
+any copied result is logged or written. Exact discovered course/plan IDs are
+resolved within the still-open patient; physics and clinical branches invoke
+the Phase 12F services independently.
+
+Every row is written and flushed immediately. Missing patients, discovery
+failures, unsupported geometry, missing structures or dose, individual metric
+exceptions, and unexpected patient-level exceptions produce explicit values,
+statuses and reasons without stopping later rows. Expected row failures still
+return a successful process exit; fatal application or output initialization/
+write failures remain process failures. The output now distinguishes clinical
+and physics lung/Heart structure IDs and retains all requested/resolved IDs,
+isocentre provenance, fractions, metrics, configuration hash and application
+version.
+
+Each row receives an indexed, filename-safe per-patient log in the configured
+log directory, while the timestamped batch log contains all patient sections
+and a final total/fully-available/unavailable summary. Console progress works
+both interactively and when redirected. Automated validation passes 57 Core,
+29 ESAPI-contract and 51 Batch tests. Tests cover independent branches, partial
+metric availability, a failed first patient followed by continued processing,
+missing-patient rows, stable CSV output and exactly one disposal attempt for
+each opened session. Live lifecycle and value checks remain milestone 12H.
 
 ## 10. Milestone 12H — Integration and hospital validation
 

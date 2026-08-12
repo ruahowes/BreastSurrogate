@@ -49,14 +49,17 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AuditDvhMetricRequestMapper.cs" />
+    <Compile Include="BatchAuditRunner.cs" />
     <Compile Include="BatchConfiguration.cs" />
     <Compile Include="BatchCommandLine.cs" />
     <Compile Include="BatchOutputCsv.cs" />
     <Compile Include="ConsoleProgressReporter.cs" />
     <Compile Include="CsvCodec.cs" />
     <Compile Include="EsapiDiscoverySnapshotFactory.cs" />
+    <Compile Include="EsapiPatientAuditSource.cs" />
     <Compile Include="InteractiveInput.cs" />
     <Compile Include="PatientInputCsv.cs" />
+    <Compile Include="PatientAuditProcessor.cs" />
     <Compile Include="PlanDiscovery.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

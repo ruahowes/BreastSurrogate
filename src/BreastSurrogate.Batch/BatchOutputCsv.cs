@@ -91,6 +91,8 @@ namespace BreastSurrogate.Batch
             "ClinicalIsocentreZmm",
             "ClinicalIsocentreReason",
             "Fractions",
+            "ClinicalIpsilateralLungStructureId",
+            "ClinicalHeartStructureId",
             "PhysicsIpsilateralLungStructureId",
             "PhysicsHeartStructureId",
             "ILFStructureId",
