@@ -488,6 +488,12 @@ rejects leaf changes greater than the provisional `0.01 mm` static-position
 tolerance. It copies control point 0 into the tested Core `MlcAperture` after
 all static checks pass.
 
+The adapter also supports the explicit no-MLC case observed during the first
+batch audit: `Beam.MLCPlanType == NotDefined` constructs the already-validated
+jaw-only `StaticBeamAperture` and does not require MLC hardware or leaf arrays.
+This is an exact representation of a jaw-only field, not an MLC approximation.
+Dynamic MLC plan types remain unsupported.
+
 ESAPI documents bank 0 as negative MLC X and bank 1 as positive MLC X. The
 adapter maps ESAPI leaf index 0 to the most negative BLD-Y leaf pair. Runtime
 logs include zero-based indices, one-based Varian leaf-pair numbers,
@@ -651,6 +657,23 @@ Clinical and physics lung/Heart IDs have separate output columns. Automated
 tests verify continuation after failure, missing-patient rows, partial metrics,
 stable output and exactly one disposal per opened session. Hospital lifecycle
 and Eclipse-value validation remain milestone 12H.
+
+The first five-patient hospital run on 12 August 2026 completed three rows and
+exposed two conservative discovery variants. Physics discovery now falls back,
+only when exact PHYS/PPHYS tokens are absent, to a delimited token one edit away
+such as `PPHY`; a unique PlanningApproved plan can resolve multiple similar plan
+candidates. Clinical discovery still prefers a reviewed plan, but when none
+exists it can map an x-prefixed rejected ID such as `xL BRST` to the unique
+non-rejected exact ID `L BRST`. Both fallbacks reject ambiguity and preserve
+their selection method in the output. A repeat Citrix run is required for the
+Phase 12H validation record.
+
+A further audit case used static PPHYS tangent fields without an MLC, reported
+by ESAPI as `MLCPlanType.NotDefined`. The beam adapter now treats this explicitly
+as jaw-only geometry while retaining all orientation, couch, static-angle and
+jaw-constancy validation. Interactive diagnostics also handle absent leaf arrays
+and label the Core aperture as jaw-only. A repeat Citrix run is required to
+confirm the resulting geometric values.
 
 ### Input and execution
 

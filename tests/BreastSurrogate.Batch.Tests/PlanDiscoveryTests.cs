@@ -112,6 +112,55 @@ namespace BreastSurrogate.Batch.Tests
         }
 
         [TestMethod]
+        public void ClinicalFallsBackFromXPrefixedRejectedIdWhenNoReviewedPlanExists()
+        {
+            PatientPlanDiscoveryResult result = Discover(Patient(Course(
+                "PLANNING",
+                Plan("xL BRST", PlanApprovalKind.Rejected),
+                Plan("L BRST", PlanApprovalKind.PlanningApproved, Point(1, 2, 3)),
+                Plan("L BRST DC", PlanApprovalKind.Other, Point(1, 2, 3)))));
+
+            Assert.IsTrue(result.Clinical.IsSelected, result.Clinical.Reason);
+            Assert.AreEqual("L BRST", result.Clinical.PlanId);
+            Assert.AreEqual(
+                PlanDiscoveryMethod.RejectedPlanIdFallback,
+                result.Clinical.Method);
+        }
+
+        [TestMethod]
+        public void ReviewedClinicalPlanTakesPriorityOverRejectedIdFallback()
+        {
+            PatientPlanDiscoveryResult result = Discover(Patient(Course(
+                "PLANNING",
+                Plan("xL BRST", PlanApprovalKind.Rejected),
+                Plan("L BRST", PlanApprovalKind.PlanningApproved, Point(1, 2, 3)),
+                Plan("REVIEWED", PlanApprovalKind.Reviewed, Point(4, 5, 6)))));
+
+            Assert.IsTrue(result.Clinical.IsSelected, result.Clinical.Reason);
+            Assert.AreEqual("REVIEWED", result.Clinical.PlanId);
+            Assert.AreEqual(PlanDiscoveryMethod.Automatic, result.Clinical.Method);
+        }
+
+        [TestMethod]
+        public void ClinicalRejectedIdFallbackRequiresLeadingXAndUniqueExactMatch()
+        {
+            PatientPlanDiscoveryResult noPrefix = Discover(Patient(Course(
+                "PLANNING",
+                Plan("OLD L BRST", PlanApprovalKind.Rejected),
+                Plan("L BRST", PlanApprovalKind.PlanningApproved, Point(0, 0, 0)))));
+            Assert.AreEqual(PlanDiscoveryStatus.Missing, noPrefix.Clinical.Status);
+
+            PatientPlanDiscoveryResult ambiguous = Discover(Patient(Course(
+                "PLANNING",
+                Plan("xL BRST", PlanApprovalKind.Rejected),
+                Plan("xR BRST", PlanApprovalKind.Rejected),
+                Plan("L BRST", PlanApprovalKind.Other, Point(0, 0, 0)),
+                Plan("R BRST", PlanApprovalKind.Other, Point(0, 0, 0)))));
+            Assert.AreEqual(PlanDiscoveryStatus.Ambiguous, ambiguous.Clinical.Status);
+            StringAssert.Contains(ambiguous.Clinical.Reason, "matched multiple");
+        }
+
+        [TestMethod]
         public void ReviewedPlanWithoutTreatmentIsocentreIsUnsupportedButIdsRemain()
         {
             PatientPlanDiscoveryResult result = Discover(Patient(
@@ -174,6 +223,60 @@ namespace BreastSurrogate.Batch.Tests
             PatientPlanDiscoveryResult partial = Discover(Patient(
                 Course("BIOPHYSICS", Plan("BIOPHYSICS", PlanApprovalKind.Other))));
             Assert.AreEqual(PlanDiscoveryStatus.Missing, partial.Physics.Status);
+        }
+
+        [TestMethod]
+        public void PhysicsFallsBackToUniquePphyTokenInCourseAndPlan()
+        {
+            PatientPlanDiscoveryResult result = Discover(Patient(
+                Course("PPHY RT BRST",
+                    Plan("PPHY RT BRST", PlanApprovalKind.PlanningApproved))));
+
+            Assert.IsTrue(result.Physics.IsSelected, result.Physics.Reason);
+            Assert.AreEqual("PPHY RT BRST", result.Physics.CourseId);
+            Assert.AreEqual("PPHY RT BRST", result.Physics.PlanId);
+            Assert.AreEqual(
+                PlanDiscoveryMethod.SimilarPhysicsTokenFallback,
+                result.Physics.Method);
+        }
+
+        [TestMethod]
+        public void ExactPhysicsTokenTakesPriorityOverSimilarToken()
+        {
+            PatientPlanDiscoveryResult result = Discover(Patient(
+                Course("PPHYS RT BRST", Plan("PPHYS PLAN", PlanApprovalKind.Other)),
+                Course("PPHY RT BRST", Plan("PPHY PLAN", PlanApprovalKind.PlanningApproved))));
+
+            Assert.IsTrue(result.Physics.IsSelected, result.Physics.Reason);
+            Assert.AreEqual("PPHYS RT BRST", result.Physics.CourseId);
+            Assert.AreEqual(PlanDiscoveryMethod.Automatic, result.Physics.Method);
+        }
+
+        [TestMethod]
+        public void UniquePlanningApprovedPlanDisambiguatesSimilarPhysicsPlans()
+        {
+            PatientPlanDiscoveryResult result = Discover(Patient(Course(
+                "PPHYS",
+                Plan("PPHY A", PlanApprovalKind.Other),
+                Plan("PPHY B", PlanApprovalKind.PlanningApproved))));
+
+            Assert.IsTrue(result.Physics.IsSelected, result.Physics.Reason);
+            Assert.AreEqual("PPHY B", result.Physics.PlanId);
+            Assert.AreEqual(
+                PlanDiscoveryMethod.SimilarPhysicsTokenFallback,
+                result.Physics.Method);
+        }
+
+        [TestMethod]
+        public void MultipleSimilarPhysicsPlansRemainAmbiguousWithoutApprovalPreference()
+        {
+            PatientPlanDiscoveryResult result = Discover(Patient(Course(
+                "PPHYS",
+                Plan("PPHY A", PlanApprovalKind.Other),
+                Plan("PPHY B", PlanApprovalKind.Other))));
+
+            Assert.AreEqual(PlanDiscoveryStatus.Ambiguous, result.Physics.Status);
+            StringAssert.Contains(result.Physics.Reason, "Multiple external plans");
         }
 
         [TestMethod]

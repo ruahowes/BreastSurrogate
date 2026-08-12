@@ -290,6 +290,9 @@ Resolve the clinical and physics branches independently after opening a patient.
 - course ID contains `PLANNING`, case-insensitively;
 - candidate course contains at least one rejected external plan;
 - candidate course contains exactly one reviewed external plan;
+- if no reviewed plan exists, a unique non-rejected plan may be selected when
+  its ID exactly matches an x-prefixed rejected plan after removing only the
+  leading x;
 - an exact planning-course override may disambiguate courses;
 - multiple reviewed plans are never resolved heuristically;
 - reviewed plans with no treatment isocentre or multiple distinct treatment
@@ -298,6 +301,9 @@ Resolve the clinical and physics branches independently after opening a patient.
 ### Physics branch
 
 - course and plan IDs contain a complete `PPHYS` or `PHYS` token;
+- only when exact tokens are absent, permit a unique delimited token one edit
+  from `PPHYS` or `PHYS` (for example `PPHY`), with unique PlanningApproved
+  status allowed to disambiguate similar-token plans;
 - exact physics-course and physics-plan overrides may disambiguate;
 - missing or ambiguous selection makes physics metrics unavailable.
 
@@ -325,6 +331,14 @@ rules. Exact CSV overrides are case-sensitive. Automatic `PLANNING`, `PHYS` and
 `PPHYS` matching is case-insensitive; physics tokens must be complete configured
 tokens. The clinical and physics branches produce independent status, method,
 reason and candidate diagnostics.
+
+Following the first five-patient hospital audit on 12 August 2026, discovery
+also has two deliberately narrow compatibility fallbacks. A planning course
+without a reviewed plan can map rejected `xL BRST` to the unique non-rejected
+exact ID `L BRST`. If no exact PHYS/PPHYS token exists, a delimited token exactly
+one edit away can match the observed `PPHY` form; a unique PlanningApproved
+similar-token plan can resolve multiple such plan candidates. Primary reviewed
+and exact-token matches always win, and fallback ambiguity remains unavailable.
 
 Reviewed-plan treatment-beam isocentres are treated as one isocentre when every
 pair lies within `0.01 mm`; the deterministic reference is their coordinate-wise
@@ -475,10 +489,26 @@ each opened session. Live lifecycle and value checks remain milestone 12H.
 
 ## 10. Milestone 12H — Integration and hospital validation
 
-**Status:** Not started
+**Status:** In progress; initial five-patient run completed, discovery and jaw-only fallbacks pending retest
 
 Run automated tests after each meaningful change and validate the completed
 workflow inside the supported hospital-network ESAPI environment.
+
+An initial five-patient run on 12 August 2026 completed the full workflow for
+three patients. One remaining physics branch used the observed `PPHY` plan ID,
+and one planning course had no reviewed plan but contained rejected `xL BRST`
+and intended plan `L BRST`. The narrow Phase 12E compatibility fallbacks now
+cover both cases and require a repeat hospital run before those validation
+points are closed.
+
+One PPHYS plan also used no MLC and reported `MLCPlanType.NotDefined`. This is
+now treated as an explicit jaw-only static aperture: the ordinary beam, couch,
+angle and jaw checks still apply, while MLC hardware and leaf checks are skipped.
+Static Millennium fields are unchanged, and all dynamic MLC plan types remain
+unsupported. This case also requires repeat hospital validation.
+
+Automated validation currently passes 57 Core, 32 ESAPI-contract and 58 Batch
+tests (147 total).
 
 ### Deliberate validation cases
 

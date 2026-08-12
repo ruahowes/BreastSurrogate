@@ -36,6 +36,11 @@ namespace BreastSurrogate.Batch
                 return PlanApprovalKind.Rejected;
             }
 
+            if (approval == PlanSetupApprovalStatus.PlanningApproved)
+            {
+                return PlanApprovalKind.PlanningApproved;
+            }
+
             return approval == PlanSetupApprovalStatus.Reviewed
                 ? PlanApprovalKind.Reviewed
                 : PlanApprovalKind.Other;

@@ -10,7 +10,8 @@ namespace BreastSurrogate.Batch
     {
         Other,
         Rejected,
-        Reviewed
+        Reviewed,
+        PlanningApproved
     }
 
     public enum PlanDiscoveryStatus
@@ -25,7 +26,10 @@ namespace BreastSurrogate.Batch
     {
         None,
         Automatic,
+        RejectedPlanIdFallback,
+        SimilarPhysicsTokenFallback,
         ExactCourseOverride,
+        ExactCourseOverrideWithRejectedPlanIdFallback,
         ExactPlanOverride,
         ExactCourseAndPlanOverride
     }
@@ -300,8 +304,17 @@ namespace BreastSurrogate.Batch
                     .ToList();
                 if (eligible.Count == 0)
                 {
+                    eligible = namedCourses
+                        .Where(course => RejectedCount(course) >= 1
+                            && ReviewedCount(course) == 0
+                            && FindRejectedIdFallbackPlans(course).Count > 0)
+                        .ToList();
+                }
+
+                if (eligible.Count == 0)
+                {
                     return Failure(PlanDiscoveryStatus.Missing,
-                        "No planning course has at least one rejected and exactly one reviewed external plan.",
+                        "No planning course has a selectable reviewed plan or a unique plan matching an x-prefixed rejected plan ID.",
                         diagnostics);
                 }
 
@@ -327,8 +340,27 @@ namespace BreastSurrogate.Batch
                 .ToList();
             if (reviewed.Count == 0)
             {
-                return CourseFailure(selectedCourse, PlanDiscoveryStatus.Missing, method,
-                    "Selected planning course has no reviewed external plan.", diagnostics);
+                List<ExternalPlanDiscoverySnapshot> fallback =
+                    FindRejectedIdFallbackPlans(selectedCourse);
+                diagnostics.Add("Clinical rejected-ID fallback plans: "
+                    + FormatIds(fallback.Select(plan => plan.Id)));
+                if (fallback.Count == 0)
+                {
+                    return CourseFailure(selectedCourse, PlanDiscoveryStatus.Missing, method,
+                        "Selected planning course has no reviewed plan and no plan whose ID exactly matches an x-prefixed rejected plan after removing the leading x.",
+                        diagnostics);
+                }
+
+                if (fallback.Count > 1)
+                {
+                    return CourseFailure(selectedCourse, PlanDiscoveryStatus.Ambiguous, method,
+                        "Clinical rejected-plan ID fallback matched multiple plans.", diagnostics);
+                }
+
+                reviewed = fallback;
+                method = method == PlanDiscoveryMethod.ExactCourseOverride
+                    ? PlanDiscoveryMethod.ExactCourseOverrideWithRejectedPlanIdFallback
+                    : PlanDiscoveryMethod.RejectedPlanIdFallback;
             }
 
             if (reviewed.Count > 1)
@@ -372,6 +404,16 @@ namespace BreastSurrogate.Batch
                 .Where(course => coursePattern.IsMatch(course.Id))
                 .ToList();
             diagnostics.Add("Physics token courses: " + FormatIds(tokenCourses.Select(course => course.Id)));
+            bool similarCourseFallback = false;
+            if (tokenCourses.Count == 0)
+            {
+                tokenCourses = patient.Courses
+                    .Where(course => ContainsSimilarPhysicsToken(course.Id))
+                    .ToList();
+                similarCourseFallback = tokenCourses.Count > 0;
+                diagnostics.Add("Physics similar-token course fallback: "
+                    + FormatIds(tokenCourses.Select(course => course.Id)));
+            }
 
             CourseDiscoverySnapshot selectedCourse;
             bool courseWasOverridden = courseOverride != null;
@@ -410,13 +452,16 @@ namespace BreastSurrogate.Batch
                 if (candidates.Count == 0)
                 {
                     return Failure(PlanDiscoveryStatus.Missing,
-                        "No course ID contains a complete configured PPHYS/PHYS token.", diagnostics);
+                        "No course ID contains a complete configured PPHYS/PHYS token or a unique delimited token one edit away.", diagnostics);
                 }
 
                 if (candidates.Count > 1)
                 {
                     return Failure(PlanDiscoveryStatus.Ambiguous,
-                        "Multiple courses contain a complete configured PPHYS/PHYS token.", diagnostics);
+                        similarCourseFallback
+                            ? "Multiple courses contain a similar PPHYS/PHYS token one edit away."
+                            : "Multiple courses contain a complete configured PPHYS/PHYS token.",
+                        diagnostics);
                 }
 
                 selectedCourse = candidates[0];
@@ -424,6 +469,7 @@ namespace BreastSurrogate.Batch
 
             diagnostics.Add("Physics selected course: " + selectedCourse.Id);
             List<ExternalPlanDiscoverySnapshot> planCandidates;
+            bool similarPlanFallback = false;
             if (planOverride != null)
             {
                 planCandidates = selectedCourse.ExternalPlans.Where(plan => string.Equals(
@@ -436,6 +482,28 @@ namespace BreastSurrogate.Batch
                 planCandidates = selectedCourse.ExternalPlans
                     .Where(plan => planPattern.IsMatch(plan.Id))
                     .ToList();
+                if (planCandidates.Count == 0)
+                {
+                    planCandidates = selectedCourse.ExternalPlans
+                        .Where(plan => ContainsSimilarPhysicsToken(plan.Id))
+                        .ToList();
+                    if (planCandidates.Count > 1)
+                    {
+                        List<ExternalPlanDiscoverySnapshot> planningApproved = planCandidates
+                            .Where(plan => plan.Approval == PlanApprovalKind.PlanningApproved)
+                            .ToList();
+                        if (planningApproved.Count == 1)
+                        {
+                            diagnostics.Add("Physics similar-token fallback was disambiguated by unique PlanningApproved status.");
+                            planCandidates = planningApproved;
+                        }
+                    }
+
+                    if (planCandidates.Count > 0)
+                    {
+                        similarPlanFallback = true;
+                    }
+                }
             }
 
             diagnostics.Add("Physics candidate plans: "
@@ -447,7 +515,7 @@ namespace BreastSurrogate.Batch
                         ? PlanDiscoveryMethod.ExactCourseOverride
                         : PlanDiscoveryMethod.Automatic,
                     planOverride == null
-                        ? "No external plan ID contains a complete configured PPHYS/PHYS token."
+                        ? "No external plan ID contains a complete configured PPHYS/PHYS token or a delimited token one edit away."
                         : "Exact physics-plan override was not found in the selected course: " + planOverride,
                     diagnostics);
             }
@@ -459,7 +527,9 @@ namespace BreastSurrogate.Batch
                         ? PlanDiscoveryMethod.ExactCourseOverride
                         : PlanDiscoveryMethod.Automatic,
                     planOverride == null
-                        ? "Multiple external plans contain a complete configured PPHYS/PHYS token."
+                        ? similarPlanFallback
+                            ? "Multiple external plans contain a similar PPHYS/PHYS token one edit away."
+                            : "Multiple external plans contain a complete configured PPHYS/PHYS token."
                         : "Exact physics-plan override matched multiple plans: " + planOverride,
                     diagnostics);
             }
@@ -469,9 +539,11 @@ namespace BreastSurrogate.Batch
                 ? PlanDiscoveryMethod.ExactCourseAndPlanOverride
                 : courseWasOverridden
                     ? PlanDiscoveryMethod.ExactCourseOverride
-                    : planOverride != null
+                        : planOverride != null
                         ? PlanDiscoveryMethod.ExactPlanOverride
-                        : PlanDiscoveryMethod.Automatic;
+                        : similarCourseFallback || similarPlanFallback
+                            ? PlanDiscoveryMethod.SimilarPhysicsTokenFallback
+                            : PlanDiscoveryMethod.Automatic;
             diagnostics.Add("Physics selected: " + selectedCourse.Id + " / " + selectedPlan.Id);
             return new PlanBranchDiscoveryResult(
                 PlanDiscoveryStatus.Selected,
@@ -539,11 +611,86 @@ namespace BreastSurrogate.Batch
             return course.ExternalPlans.Count(plan => plan.Approval == PlanApprovalKind.Reviewed);
         }
 
+        private static List<ExternalPlanDiscoverySnapshot> FindRejectedIdFallbackPlans(
+            CourseDiscoverySnapshot course)
+        {
+            var targets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (ExternalPlanDiscoverySnapshot rejected in course.ExternalPlans.Where(
+                plan => plan.Approval == PlanApprovalKind.Rejected))
+            {
+                string id = rejected.Id.Trim();
+                if (id.Length > 1 && (id[0] == 'x' || id[0] == 'X'))
+                {
+                    targets.Add(id.Substring(1).TrimStart());
+                }
+            }
+
+            return course.ExternalPlans
+                .Where(plan => plan.Approval != PlanApprovalKind.Rejected)
+                .Where(plan => targets.Contains(plan.Id.Trim()))
+                .OrderBy(plan => plan.Id, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(plan => plan.Id, StringComparer.Ordinal)
+                .ToList();
+        }
+
+        private static bool ContainsSimilarPhysicsToken(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return false;
+            }
+
+            return Regex.Split(id.Trim(), "[ _-]+")
+                .Any(token => IsOneEditAway(token, "PPHYS")
+                    || IsOneEditAway(token, "PHYS"));
+        }
+
+        private static bool IsOneEditAway(string value, string target)
+        {
+            if (string.IsNullOrEmpty(value)
+                || Math.Abs(value.Length - target.Length) > 1
+                || string.Equals(value, target, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            value = value.ToUpperInvariant();
+            target = target.ToUpperInvariant();
+            var distance = new int[value.Length + 1, target.Length + 1];
+            for (int row = 0; row <= value.Length; row++)
+            {
+                distance[row, 0] = row;
+            }
+
+            for (int column = 0; column <= target.Length; column++)
+            {
+                distance[0, column] = column;
+            }
+
+            for (int row = 1; row <= value.Length; row++)
+            {
+                for (int column = 1; column <= target.Length; column++)
+                {
+                    int substitution = value[row - 1] == target[column - 1] ? 0 : 1;
+                    distance[row, column] = Math.Min(
+                        Math.Min(
+                            distance[row - 1, column] + 1,
+                            distance[row, column - 1] + 1),
+                        distance[row - 1, column - 1] + substitution);
+                }
+            }
+
+            return distance[value.Length, target.Length] == 1;
+        }
+
         private static string FormatCourseSignature(CourseDiscoverySnapshot course)
         {
             return "Planning candidate " + course.Id
                 + ": rejected=" + RejectedCount(course).ToString(CultureInfo.InvariantCulture)
                 + ", reviewed=" + ReviewedCount(course).ToString(CultureInfo.InvariantCulture)
+                + ", planningApproved=" + course.ExternalPlans.Count(
+                    plan => plan.Approval == PlanApprovalKind.PlanningApproved)
+                    .ToString(CultureInfo.InvariantCulture)
                 + ", externalPlans=" + course.ExternalPlans.Count.ToString(CultureInfo.InvariantCulture);
         }
 

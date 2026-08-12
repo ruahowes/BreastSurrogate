@@ -40,7 +40,14 @@ episodes. A candidate course must contain:
   `PlanSetup.ApprovalStatus == PlanSetupApprovalStatus.Reviewed`.
 
 The rejected plan is a course-identification signal only and is never used for
-DVH extraction. The unique reviewed plan is the intended dose/DVH source.
+DVH extraction. The unique reviewed plan is the intended dose/DVH source. If a
+planning course has no reviewed plan, permit one conservative legacy fallback:
+for each rejected plan whose ID begins with `x` (case-insensitive), remove only
+that leading character and look for a non-rejected plan with the remaining ID,
+matched case-insensitively and otherwise exactly. For example, rejected
+`xL BRST` may identify `L BRST`. Require exactly one fallback match; do not use
+general edit distance, dates or collection order. A reviewed plan always takes
+priority over this fallback.
 Missing dose or a missing metric structure makes the affected metrics
 unavailable; it does not remove the patient from the output or stop the batch.
 
@@ -60,11 +67,20 @@ not fully consistent: `PHYS` may appear instead of `PPHYS`.
 Default discovery uses case-insensitive complete-token matches for `PPHYS` or
 the historic typo `PHYS` in both course and plan IDs, for example
 `PPHYS RT BRST` or `PHYS RT BRST`. The token may be delimited by spaces,
-underscores, hyphens, or an ID boundary; fuzzy spelling matches are not used.
+underscores, hyphens, or an ID boundary.
 Require exactly one matching course and exactly one matching external plan,
 unless exact IDs are supplied in the CSV row. Ambiguous automatic discovery
 prevents physics-plan calculations for that row, but the row must still be
 exported and the batch must continue.
+
+If no exact complete token matches at a course or plan level, permit a
+conservative similar-token fallback: a space/underscore/hyphen-delimited token
+must have edit distance exactly one from `PPHYS` or `PHYS`. This includes the
+observed plan ID token `PPHY` but does not match embedded text such as
+`BIOPHYSICS`. Exact token matches always take priority. Require a unique
+fallback match; when multiple similar-token plans remain within the selected
+course, a unique `PlanningApproved` plan may disambiguate them. Otherwise report
+ambiguity rather than choosing by collection order.
 
 The selected physics plan must pass the same BreastSurrogate restrictions as
 interactive use: HFS, static couch-zero `ANT MED` and `POST LAT` beams,

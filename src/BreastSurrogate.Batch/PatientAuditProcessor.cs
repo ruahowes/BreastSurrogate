@@ -284,6 +284,18 @@ namespace BreastSurrogate.Batch
             {
                 log.Add("Selected treatment beams: "
                     + result.Geometric.Field1.BeamId + " | " + result.Geometric.Field2.BeamId);
+                log.Add(result.Geometric.Field1.BeamId + " aperture: "
+                    + (result.Geometric.Field1.Aperture.Mlc == null
+                        ? "jaw-only"
+                        : "jaw + "
+                            + result.Geometric.Field1.Aperture.Mlc
+                                .GeometryDefinition.ModelIdentifier));
+                log.Add(result.Geometric.Field2.BeamId + " aperture: "
+                    + (result.Geometric.Field2.Aperture.Mlc == null
+                        ? "jaw-only"
+                        : "jaw + "
+                            + result.Geometric.Field2.Aperture.Mlc
+                                .GeometryDefinition.ModelIdentifier));
             }
 
             if (result.Geometric.SharedFailureReason != null)

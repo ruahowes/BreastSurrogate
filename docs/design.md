@@ -175,6 +175,7 @@ Initial support is deliberately restricted to:
 - head-first supine patient orientation;
 - patient support/couch angle of 0 degrees;
 - one static aperture per beam;
+- jaw-only fields reported by ESAPI with `MLCPlanType.NotDefined`;
 - a specifically validated TrueBeam MLC model;
 - lung and heart structures with valid segment volumes;
 - a volume image associated with the structure set.
@@ -388,6 +389,13 @@ the most negative BLD-Y pair. Differences in Eclipse display units/scale did
 not change the observed correspondence.
 
 No model should be accepted unless its leaf geometry has been explicitly configured and validated.
+
+An external static photon field with `Beam.MLCPlanType == NotDefined` is a
+distinct supported jaw-only case, not an unknown MLC model. Its aperture is the
+validated jaw opening alone; MLC hardware, leaf-array and leaf-constancy checks
+are not applicable. `Static` fields continue to require the configured MLC
+model and valid constant leaf positions. Dose-dynamic, arc-dynamic and VMAT MLC
+plan types remain unsupported.
 
 The first MLC implementation supports only this known clinical TrueBeam model.
 Additional models can be added later after their identifiers and physical
@@ -719,7 +727,7 @@ The script must stop with a clear explanation if:
 - a selected beam is not supported;
 - couch angle is not within the defined zero-angle tolerance;
 - control points describe a changing aperture;
-- MLC model is unsupported;
+- a field reports `Static` MLC use but its MLC model is unsupported;
 - projection geometry is degenerate;
 - no structure sample points are found.
 

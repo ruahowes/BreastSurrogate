@@ -9,7 +9,7 @@ using VMS.TPS.Common.Model.Types;
 namespace BreastSurrogate.Esapi.Esapi
 {
     /// <summary>
-    /// Creates a validated static jaw-and-MLC Core aperture from a real ESAPI beam.
+    /// Creates a validated static jaw-only or jaw-and-MLC Core aperture from a real ESAPI beam.
     /// </summary>
     public sealed class EsapiBeamGeometryFactory
     {
@@ -28,7 +28,10 @@ namespace BreastSurrogate.Esapi.Esapi
             }
 
             ValidateBeamType(beam, patientOrientation);
-            MlcGeometryDefinition mlcGeometry = GetSupportedMlcGeometry(beam);
+            bool usesMlc = UsesStaticMlc(beam.MLCPlanType);
+            MlcGeometryDefinition mlcGeometry = usesMlc
+                ? GetSupportedMlcGeometry(beam)
+                : null;
 
             List<ControlPoint> controlPoints = beam.ControlPoints.ToList();
             if (controlPoints.Count == 0)
@@ -54,9 +57,11 @@ namespace BreastSurrogate.Esapi.Esapi
                     firstControlPoint.CollimatorAngle);
                 var projection = new BeamProjection(coordinateSystem);
                 var jaws = new JawAperture(firstControlPoint.JawPositions);
-                var mlc = new MlcAperture(
-                    mlcGeometry,
-                    ConvertLeafPositions(firstControlPoint.LeafPositions));
+                MlcAperture mlc = usesMlc
+                    ? new MlcAperture(
+                        mlcGeometry,
+                        ConvertLeafPositions(firstControlPoint.LeafPositions))
+                    : null;
                 return new StaticBeamAperture(projection, jaws, mlc);
             }
             catch (ArgumentException exception)
@@ -112,7 +117,7 @@ namespace BreastSurrogate.Esapi.Esapi
                     + " degrees");
             }
 
-            if (beam.MLCPlanType != MLCPlanType.Static)
+            if (!IsSupportedMlcPlanType(beam.MLCPlanType))
             {
                 throw Unsupported(
                     beam,
@@ -128,6 +133,17 @@ namespace BreastSurrogate.Esapi.Esapi
             {
                 throw Unsupported(beam, "uses unsupported Halcyon geometry");
             }
+        }
+
+        internal static bool UsesStaticMlc(MLCPlanType planType)
+        {
+            return planType == MLCPlanType.Static;
+        }
+
+        internal static bool IsSupportedMlcPlanType(MLCPlanType planType)
+        {
+            return planType == MLCPlanType.Static
+                || planType == MLCPlanType.NotDefined;
         }
 
         private static void ValidateControlPointConstancy(
@@ -161,7 +177,8 @@ namespace BreastSurrogate.Esapi.Esapi
                     throw ChangingControlPoint(beam, index, "jaw positions");
                 }
 
-                if (!LeafPositionsEqual(reference.LeafPositions, candidate.LeafPositions))
+                if (mlcGeometry != null
+                    && !LeafPositionsEqual(reference.LeafPositions, candidate.LeafPositions))
                 {
                     throw ChangingControlPoint(beam, index, "leaf positions");
                 }
@@ -203,6 +220,11 @@ namespace BreastSurrogate.Esapi.Esapi
                 throw Unsupported(
                     beam,
                     "has non-finite jaw positions at control point " + index);
+            }
+
+            if (mlcGeometry == null)
+            {
+                return;
             }
 
             float[,] leaves = controlPoint.LeafPositions;

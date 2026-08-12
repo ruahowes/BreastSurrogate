@@ -388,9 +388,11 @@ namespace BreastSurrogate.Esapi.Esapi
                 float[,] leafPositions = controlPoint.LeafPositions;
                 logger.Log(
                     controlPointPrefix + "LeafArrayDimensions",
-                    FormatDimensions(
-                        leafPositions.GetLength(0),
-                        leafPositions.GetLength(1)));
+                    leafPositions == null
+                        ? "<none>"
+                        : FormatDimensions(
+                            leafPositions.GetLength(0),
+                            leafPositions.GetLength(1)));
             }
         }
 
@@ -418,6 +420,32 @@ namespace BreastSurrogate.Esapi.Esapi
             logger.Log(prefix + "ValidatedJawBoundsBldMm", FormatRectangle(aperture.Jaws.Bounds));
 
             MlcAperture mlc = aperture.Mlc;
+            if (mlc == null)
+            {
+                logger.Log(prefix + "ConfiguredMlcModel", "<none: jaw-only aperture>");
+                logger.Log(prefix + "MlcStaticControlPointValidation", "Not applicable");
+                LogProjectionDebug(logger, aperture, prefix, "Isocentre", coordinates.Isocentre);
+                LogProjectionDebug(
+                    logger,
+                    aperture,
+                    prefix,
+                    "DicomPlus10X",
+                    coordinates.Isocentre + new VVector(10.0, 0.0, 0.0));
+                LogProjectionDebug(
+                    logger,
+                    aperture,
+                    prefix,
+                    "DicomPlus10Y",
+                    coordinates.Isocentre + new VVector(0.0, 10.0, 0.0));
+                LogProjectionDebug(
+                    logger,
+                    aperture,
+                    prefix,
+                    "DicomPlus10Z",
+                    coordinates.Isocentre + new VVector(0.0, 0.0, 10.0));
+                return;
+            }
+
             logger.Log(prefix + "ConfiguredMlcModel", mlc.GeometryDefinition.ModelIdentifier);
             logger.Log(
                 prefix + "ValidatedLeafArrayDimensions",

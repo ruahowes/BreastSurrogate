@@ -63,6 +63,7 @@
   <ItemGroup>
     <Compile Include="Calculation\BreastSurrogateCalculationResultTests.cs" />
     <Compile Include="Calculation\DvhMetricEvaluatorTests.cs" />
+    <Compile Include="Calculation\EsapiBeamGeometryFactoryTests.cs" />
     <Compile Include="Calculation\LegacyVolumeRatioEvaluatorTests.cs" />
     <Compile Include="Calculation\SurrogateMetricResultTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
