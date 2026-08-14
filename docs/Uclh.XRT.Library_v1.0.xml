@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <doc>
     <assembly>
-        <name>Uclh.XRT.Library</name>
+        <name>Uclh.XRT.Library_v1.0</name>
     </assembly>
     <members>
         <member name="T:Uclh.XRT.Esapi.Core.EsapiContext">
@@ -561,6 +561,13 @@
             </summary>
             <param name="path">The directory path to check.</param>
             <returns>True if write possible.</returns>
+        </member>
+        <member name="M:Uclh.XRT.Esapi.IO.DirectoryUtilities.SanitizeForFileName(System.String)">
+            <summary>
+            Replaces characters that are invalid in file/path names with a visible
+            placeholder so it is obvious the name has been altered.
+            The original value should still appear inside the file content itself.
+            </summary>
         </member>
         <member name="T:Uclh.XRT.Esapi.IO.Inputs">
             <summary>
@@ -1213,11 +1220,6 @@
             <value>
             The script version. Auto-populated from the calling assembly version if not explicitly set.
             </value>
-        </member>
-        <member name="P:Uclh.XRT.Esapi.Reporting.ReportMetadata.LibraryName">
-            <summary>
-            Gets or sets the name of the Uclh.XRT.Esapi library.
-            </summary>
         </member>
         <member name="P:Uclh.XRT.Esapi.Reporting.ReportMetadata.LibraryVersion">
             <summary>

@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using BreastSurrogate.Batch;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -7,34 +9,17 @@ namespace BreastSurrogate.Batch.Tests
     public class ProgramTests
     {
         [TestMethod]
-        public void NoArgumentInteractiveLaunchPauses()
+        public void RunDirectoryIsTimestampedBelowExecutableDirectory()
         {
-            Assert.IsTrue(Program.ShouldPauseAfterInvalidInput(
-                new string[0],
-                false,
-                true));
-        }
+            string path = Program.GetRunDirectoryPath(
+                @"C:\Apps\BreastSurrogate",
+                new DateTime(2026, 8, 14, 9, 8, 7, 654));
 
-        [TestMethod]
-        public void RedirectedOrNonInteractiveLaunchDoesNotPause()
-        {
-            Assert.IsFalse(Program.ShouldPauseAfterInvalidInput(
-                new string[0],
-                true,
-                true));
-            Assert.IsFalse(Program.ShouldPauseAfterInvalidInput(
-                new string[0],
-                false,
-                false));
-        }
-
-        [TestMethod]
-        public void LaunchWithArgumentsDoesNotPause()
-        {
-            Assert.IsFalse(Program.ShouldPauseAfterInvalidInput(
-                new[] { "patients.csv" },
-                false,
-                true));
+            Assert.AreEqual(
+                Path.Combine(
+                    @"C:\Apps\BreastSurrogate",
+                    "BreastSurrogateAudit_20260814_090807_654"),
+                path);
         }
 
         [TestMethod]
@@ -42,8 +27,13 @@ namespace BreastSurrogate.Batch.Tests
         {
             string sanitized = Program.SanitizeFileName("PAT/01");
 
-            Assert.IsFalse(sanitized.Contains("/"));
-            Assert.AreNotEqual(string.Empty, sanitized);
+            Assert.AreEqual("PAT[47]01", sanitized);
+        }
+
+        [TestMethod]
+        public void EmptyPatientIdUsesSafeFallbackFileName()
+        {
+            Assert.AreEqual("patient", Program.SanitizeFileName(string.Empty));
         }
     }
 }

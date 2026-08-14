@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using Uclh.XRT.Esapi.IO;
 using VMS.TPS.Common.Model.API;
 
 namespace BreastSurrogate.Batch
@@ -31,8 +32,7 @@ namespace BreastSurrogate.Batch
                 return RunEsapiApplicationSafely(
                     null,
                     null,
-                    null,
-                    pauseBeforeExit);
+                    null);
             }
 
             BatchCommandLineOptions options;
@@ -40,7 +40,6 @@ namespace BreastSurrogate.Batch
             if (!BatchCommandLine.TryParse(arguments, out options, out error))
             {
                 Console.Error.WriteLine(error);
-                PauseBeforeExit(pauseBeforeExit);
                 return InvalidInputExitCode;
             }
 
@@ -51,7 +50,6 @@ namespace BreastSurrogate.Batch
                 out error))
             {
                 Console.Error.WriteLine(error);
-                PauseBeforeExit(pauseBeforeExit);
                 return InvalidInputExitCode;
             }
 
@@ -62,22 +60,19 @@ namespace BreastSurrogate.Batch
                 out error))
             {
                 Console.Error.WriteLine(error);
-                PauseBeforeExit(pauseBeforeExit);
                 return InvalidInputExitCode;
             }
 
             return RunEsapiApplicationSafely(
                 options,
                 configuration,
-                patientRows,
-                pauseBeforeExit);
+                patientRows);
         }
 
         private static int RunEsapiApplicationSafely(
             BatchCommandLineOptions options,
             BatchConfiguration configuration,
-            IList<PatientInputRow> patientRows,
-            bool pauseBeforeExit)
+            IList<PatientInputRow> patientRows)
         {
             int exitCode;
             try
@@ -99,7 +94,6 @@ namespace BreastSurrogate.Batch
                 exitCode = ApplicationStartupFailureExitCode;
             }
 
-            PauseBeforeExit(pauseBeforeExit);
             return exitCode;
         }
 
@@ -119,8 +113,7 @@ namespace BreastSurrogate.Batch
                 Console.WriteLine("Configuration: " + options.ConfigurationPath);
                 Console.WriteLine("Validated patient rows: " + patientRows.Count);
                 Console.WriteLine("Configured DVH metrics: " + configuration.Metrics.Count);
-                Console.WriteLine("Log directory: " + configuration.LogDirectory);
-                Console.WriteLine("Output directory: " + configuration.OutputDirectory);
+                Console.WriteLine("Run files will be written beside the executable.");
             }
 
             Console.WriteLine("Starting read-only ESAPI application...");
@@ -147,13 +140,17 @@ namespace BreastSurrogate.Batch
             BatchConfiguration configuration,
             IList<PatientInputRow> patientRows)
         {
-            string runId = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff", CultureInfo.InvariantCulture);
+            DateTime startedAt = DateTime.Now;
+            string runDirectory = GetRunDirectoryPath(
+                AppDomain.CurrentDomain.BaseDirectory,
+                startedAt);
+            Directory.CreateDirectory(runDirectory);
             string outputPath = Path.Combine(
-                configuration.OutputDirectory,
-                "BreastSurrogateAudit_" + runId + ".csv");
+                runDirectory,
+                "BreastSurrogateAudit.csv");
             string batchLogPath = Path.Combine(
-                configuration.LogDirectory,
-                "BreastSurrogateAudit_" + runId + ".log");
+                runDirectory,
+                "BreastSurrogateAudit.log");
             string applicationVersion = Assembly.GetExecutingAssembly()
                 .GetName()
                 .Version
@@ -190,8 +187,7 @@ namespace BreastSurrogate.Batch
                     csv,
                     batchLog,
                     (index, input, lines) => WritePatientLog(
-                        configuration.LogDirectory,
-                        runId,
+                        runDirectory,
                         index,
                         input,
                         lines,
@@ -207,7 +203,6 @@ namespace BreastSurrogate.Batch
 
         private static void WritePatientLog(
             string directory,
-            string runId,
             int index,
             PatientInputRow input,
             IList<string> lines,
@@ -216,8 +211,6 @@ namespace BreastSurrogate.Batch
             string path = Path.Combine(
                 directory,
                 "BreastSurrogateAudit_"
-                    + runId
-                    + "_"
                     + (index + 1).ToString("0000", CultureInfo.InvariantCulture)
                     + "_"
                     + SanitizeFileName(input.PatientId)
@@ -227,38 +220,27 @@ namespace BreastSurrogate.Batch
 
         internal static string SanitizeFileName(string value)
         {
-            var invalid = new HashSet<char>(Path.GetInvalidFileNameChars());
-            var safe = new StringBuilder();
-            foreach (char character in value ?? string.Empty)
-            {
-                safe.Append(invalid.Contains(character) ? '_' : character);
-            }
-
-            string result = safe.ToString().Trim().TrimEnd('.');
+            string result = DirectoryUtilities
+                .SanitizeForFileName(value ?? string.Empty)
+                .Trim()
+                .TrimEnd('.');
             return result.Length == 0 ? "patient" : result;
         }
 
-        internal static bool ShouldPauseAfterInvalidInput(
-            string[] arguments,
-            bool isInputRedirected,
-            bool isUserInteractive)
+        internal static string GetRunDirectoryPath(
+            string executableDirectory,
+            DateTime startedAt)
         {
-            return InteractiveInput.ShouldPrompt(
-                arguments,
-                isInputRedirected,
-                isUserInteractive);
-        }
-
-        private static void PauseBeforeExit(bool pauseBeforeExit)
-        {
-            if (!pauseBeforeExit)
+            if (string.IsNullOrWhiteSpace(executableDirectory))
             {
-                return;
+                throw new ArgumentException(
+                    "Executable directory cannot be null or empty.",
+                    "executableDirectory");
             }
 
-            Console.WriteLine();
-            Console.Write("Press Enter to close...");
-            Console.ReadLine();
+            string folderName = "BreastSurrogateAudit_"
+                + startedAt.ToString("yyyyMMdd_HHmmss_fff", CultureInfo.InvariantCulture);
+            return Path.Combine(executableDirectory, folderName);
         }
 
         private static void ReportAssemblyLoadFailure(FileNotFoundException exception)

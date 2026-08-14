@@ -44,8 +44,8 @@
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
     <Reference Include="WindowsBase" />
-    <Reference Include="Uclh.XRT.Library">
-      <HintPath>..\..\..\VMS.TPS\Uclh.XRT.Library.dll</HintPath>
+    <Reference Include="Uclh.XRT.Library_v1.0">
+      <HintPath>..\..\..\VMS.TPS\Uclh.XRT.Library_v1.0.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="VMS.TPS.Common.Model.API">

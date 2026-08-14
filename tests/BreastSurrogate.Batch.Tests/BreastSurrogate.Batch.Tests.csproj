@@ -47,8 +47,8 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="Uclh.XRT.Library">
-      <HintPath>..\..\..\VMS.TPS\Uclh.XRT.Library.dll</HintPath>
+    <Reference Include="Uclh.XRT.Library_v1.0">
+      <HintPath>..\..\..\VMS.TPS\Uclh.XRT.Library_v1.0.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="VMS.TPS.Common.Model.API">
